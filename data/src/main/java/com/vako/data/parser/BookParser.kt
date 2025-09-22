@@ -8,7 +8,7 @@ abstract class BooksParser {
 
     abstract suspend fun getRandomBooks(): List<ParsedBook>
 
-    abstract suspend fun getBook(internalBookId: Int): ParsedBook
+    abstract suspend fun getBook(internalBookId: String): ParsedBook
 
     abstract suspend fun getBookVoiceovers(internalVoiceoverId: String): List<ParsedVoiceover>
 

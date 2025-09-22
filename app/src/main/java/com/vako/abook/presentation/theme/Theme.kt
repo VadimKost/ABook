@@ -1,6 +1,5 @@
-package com.vako.abook.ui.theme
+package com.vako.abook.presentation.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

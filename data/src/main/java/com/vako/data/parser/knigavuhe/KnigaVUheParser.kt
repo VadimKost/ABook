@@ -18,7 +18,7 @@ import javax.inject.Inject
 class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser() {
 
     override val source: Source = Source.KnigaVUhe
-    private val page = 0
+    private var page = 0
 
     override suspend fun getRandomBooks(): List<ParsedBook> {
         val url = "${source.baseUrl}/new/?page=$page"
@@ -26,10 +26,11 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
             .userAgent("Chrome/4.0.249.0 Safari/532.5")
             .referrer("http://www.google.com")
             .get()
+        page += 1
         return parseBookList(newBooksPageDocument)
     }
 
-    override suspend fun getBook(internalBookId: Int): ParsedBook {
+    override suspend fun getBook(internalBookId: String): ParsedBook {
         TODO("Not yet implemented")
     }
 

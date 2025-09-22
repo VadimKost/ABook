@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ABook</string>
+    <string name="random_books">Random Books</string>
 </resources>
