@@ -7,26 +7,25 @@ import com.vako.data.db.entity.book.crossref.VoiceoverReaderCrossRef
 import com.vako.data.db.entity.book.detailed.BookWithDetails
 import com.vako.data.db.entity.book.detailed.VoiceoverWithDetails
 
-// TODO: Recheck and optimize
+/**
+ * Data Access Object for Book and related entities.
+ */
 @Dao
 interface BookDao {
+    // region --- Queries ---
     @Transaction
     @Query("SELECT * FROM Book WHERE inAppId = :inAppId")
     suspend fun getBookWithDetailsById(inAppId: String): BookWithDetails?
-
     @Transaction
     @Query("SELECT * FROM Book WHERE title = :title LIMIT 1")
     suspend fun getBookBySameTitle(title: String): BookWithDetails?
-
-    @Query("SELECT COUNT(*) FROM Book")
-    suspend fun getBookCount(): Int
-
     @Transaction
-    @Query("""SELECT * FROM Book ORDER BY lastShownOrOpenedAt DESC LIMIT :limit""")
+    @Query("""SELECT * FROM Book ORDER BY createdAt DESC LIMIT :limit""")
     suspend fun getRandomBooks(limit: Int): List<BookWithDetails>
 
-    @Query("UPDATE Book SET lastShownOrOpenedAt = :timestamp WHERE inAppId IN (:bookIds)")
-    suspend fun updateBooksLastShownOrOpenedTime(bookIds: List<String>, timestamp: Long = System.currentTimeMillis())
+    // endregion
+
+    // region --- Inserts ---
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBooks(books: List<BookEntity>)
@@ -49,37 +48,12 @@ interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVoiceoverReaderCrossRefs(crossRefs: List<VoiceoverReaderCrossRef>)
 
+    // endregion
+
+    // region --- Complex Insertions ---
     @Transaction
     suspend fun insertBookWithDetails(bookWithDetails: BookWithDetails) {
-        insertBooks(listOf(bookWithDetails.book))
-        insertAuthors(bookWithDetails.authors)
-
-        val voiceoverEntities = mutableListOf<VoiceoverEntity>()
-        val readerEntities = mutableListOf<ReaderEntity>()
-        val mediaItemEntities = mutableListOf<MediaItemEntity>()
-        val voiceoverReaderCrossRefs = mutableListOf<VoiceoverReaderCrossRef>()
-
-        bookWithDetails.voiceovers.forEach { voiceover ->
-            voiceoverEntities.add(voiceover.voiceover)
-            readerEntities.addAll(voiceover.readers)
-            mediaItemEntities.addAll(voiceover.mediaItems)
-            voiceover.readers.forEach { reader ->
-                voiceoverReaderCrossRefs.add(
-                    VoiceoverReaderCrossRef(voiceover.voiceover.id, reader.id)
-                )
-            }
-        }
-
-        insertVoiceovers(voiceoverEntities)
-        insertReaders(readerEntities)
-        insertMediaItems(mediaItemEntities)
-        insertVoiceoverReaderCrossRefs(voiceoverReaderCrossRefs)
-
-        insertBookAuthorCrossRefs(
-            bookWithDetails.authors.map {
-                BookAuthorCrossRef(bookWithDetails.book.inAppId, it.id)
-            }
-        )
+        insertBookWithDetailsList(listOf(bookWithDetails))
     }
 
     @Transaction
@@ -120,8 +94,7 @@ interface BookDao {
         insertBookAuthorCrossRefs(allBookAuthorRefs)
         insertVoiceoverReaderCrossRefs(allVoiceoverReaderRefs)
     }
-
-    @Transaction
+/*    @Transaction
     suspend fun addVoiceoversToBook(inAppId: String, newVoiceovers: List<VoiceoverWithDetails>) {
         val allVoiceovers = mutableListOf<VoiceoverEntity>()
         val allReaders = mutableListOf<ReaderEntity>()
@@ -143,5 +116,6 @@ interface BookDao {
         insertReaders(allReaders)
         insertMediaItems(allMediaItems)
         insertVoiceoverReaderCrossRefs(allVoiceoverReaderRefs)
-    }
+    }*/
+    // endregion
 }

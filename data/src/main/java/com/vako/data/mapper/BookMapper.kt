@@ -11,7 +11,6 @@ import java.util.UUID
 import javax.inject.Inject
 
 class BookMapper @Inject constructor(
-    private val authorMapper: AuthorMapper,
     private val voiceoverMapper: VoiceoverMapper
 ) : ListEntityMapper<BookWithDetails, Book> {
 
@@ -25,10 +24,9 @@ class BookMapper @Inject constructor(
     )
 
     override fun toEntity(domain: Book): BookWithDetails {
-        val bookId = UUID.randomUUID().toString()
         return BookWithDetails(
             book = BookEntity(
-                inAppId = bookId,
+                inAppId = domain.inAppId,
                 title = domain.title,
                 cover = domain.cover,
                 series = domain.series?.let {
@@ -43,7 +41,7 @@ class BookMapper @Inject constructor(
             },
             voiceovers = domain.voiceovers.map {
                 voiceoverMapper.toEntity(it).apply {
-                    voiceover.bookId = bookId
+                    voiceover.bookId = domain.inAppId
                 }
             }
         )

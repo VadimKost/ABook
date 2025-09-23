@@ -27,9 +27,6 @@ data class BookEntity(
     @Embedded
     val series: SeriesEntity?,
 
-    @ColumnInfo(name = "lastShownOrOpenedAt")
-    val lastShownOrOpenedAt: Long = 0,
-
     val createdAt: Long = System.currentTimeMillis(),
 
     val modifiedAt: Long = System.currentTimeMillis()

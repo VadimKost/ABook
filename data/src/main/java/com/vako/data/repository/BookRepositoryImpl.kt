@@ -1,9 +1,7 @@
 package com.vako.data.repository
 
-import android.util.Log
 import com.vako.data.db.dao.BookDao
 import com.vako.data.mapper.BookMapper
-import com.vako.data.mapper.VoiceoverMapper
 import com.vako.data.parser.knigavuhe.KnigaVUheParser
 import com.vako.domain.book.BookRepository
 import com.vako.domain.book.model.Book
@@ -11,21 +9,19 @@ import com.vako.domain.book.model.Voiceover
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val BOOKS_PER_PAGE = 10
 @Singleton
 class BookRepositoryImpl @Inject constructor(
     private val knigaVUheParser: KnigaVUheParser,
     private val bookDao: BookDao,
-    private val bookMapper: BookMapper,
-    private val voiceoverMapper: VoiceoverMapper
+    private val bookMapper: BookMapper
 ) : BookRepository {
-    companion object {
-        private const val BOOKS_PER_PAGE = 10
-    }
 
     override suspend fun getBookByInAppId(inAppId: String): Book? {
         return bookDao.getBookWithDetailsById(inAppId)?.let { bookMapper.toDomain(it) }
     }
 
+    // TODO: Fix copies of books in DB
     override suspend fun getRandomBooks(): List<Book> {
         val newRandomBooks = knigaVUheParser.getRandomBooks()
         val booksToInsert = newRandomBooks
@@ -38,15 +34,7 @@ class BookRepositoryImpl @Inject constructor(
             bookDao.insertBookWithDetailsList(booksToInsert)
         }
 
-
-        // Get random books using optimized query
-        val randomBooks = bookDao.getRandomBooks(BOOKS_PER_PAGE)
-
-        // Batch update lastShownOrOpenedAt for all returned books
-        val bookIds = randomBooks.map { it.book.inAppId }
-        if (bookIds.isNotEmpty()) {
-            bookDao.updateBooksLastShownOrOpenedTime(bookIds)
-        }
+        val randomBooks = bookDao.getRandomBooks(limit = BOOKS_PER_PAGE)
 
         return randomBooks.map { bookMapper.toDomain(it) }
     }

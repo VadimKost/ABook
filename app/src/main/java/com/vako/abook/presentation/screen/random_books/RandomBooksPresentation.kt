@@ -1,8 +1,13 @@
 package com.vako.abook.presentation.screen.random_books
 
-sealed interface RandomBooksIntent
+import com.vako.domain.book.model.Book
+
+sealed interface RandomBooksEvent {
+    object LoadMore : RandomBooksEvent
+}
 sealed interface RandomBooksAction
 
 data class RandomBooksUiState(
-    val data: String = ""
+    val isLoading: Boolean = true,
+    val randomBooks: List<Book> = emptyList()
 )
