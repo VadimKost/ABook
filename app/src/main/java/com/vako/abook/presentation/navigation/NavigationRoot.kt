@@ -14,6 +14,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.vako.abook.presentation.screen.book.book
+import com.vako.abook.presentation.screen.book.navigateToBook
 import com.vako.abook.presentation.screen.random_books.RandomBooksRoute
 import com.vako.abook.presentation.screen.random_books.randomBook
 
@@ -52,7 +54,13 @@ fun NavigationRoot() {
 
     ) {
         NavHost(navController = navController, startDestination = RandomBooksRoute) {
-            randomBook()
+            randomBook(
+                onNavigateToBook = { bookId ->
+                    navController.navigateToBook(bookId)
+                }
+            )
+
+            book()
         }
     }
 }

@@ -44,7 +44,8 @@ fun RandomBooksScreen(
         randomBooks = state.randomBooks,
         gridState = gridState,
         isLoading = state.isLoading,
-        onScrollToEnd = { viewModel.onEvent(RandomBooksEvent.LoadMore) }
+        onScrollToEnd = { viewModel.onEvent(RandomBooksEvent.LoadMore) },
+        onBookClick = { onAction(RandomBooksAction.OpenBook(it)) }
     )
 }
 
@@ -54,7 +55,8 @@ private fun RandomBooksContent(
     randomBooks: List<Book>,
     gridState: LazyGridState,
     isLoading: Boolean,
-    onScrollToEnd: () -> Unit
+    onScrollToEnd: () -> Unit,
+    onBookClick: (String) -> Unit,
 ) {
     LaunchedEffect(gridState, randomBooks.size) {
         snapshotFlow { gridState.layoutInfo }
@@ -85,10 +87,11 @@ private fun RandomBooksContent(
             ) {
                 items(randomBooks) { book ->
                     BookContainer(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 2.dp),
                         coverUrl = book.cover,
                         title = book.title,
-                        authors = book.authors.map { it.fullName }
+                        authors = book.authors.map { it.fullName },
+                        onBookClick = { onBookClick(book.inAppId) }
                     )
                 }
 
@@ -143,7 +146,8 @@ fun RandomBooksContentPreview() {
         randomBooks = randomBooks,
         gridState = rememberLazyGridState(),
         isLoading = true,
-        onScrollToEnd = {}
+        onScrollToEnd = {},
+        onBookClick = {}
     )
 }
 

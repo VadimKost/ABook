@@ -5,7 +5,9 @@ import com.vako.domain.book.model.Book
 sealed interface RandomBooksEvent {
     object LoadMore : RandomBooksEvent
 }
-sealed interface RandomBooksAction
+sealed interface RandomBooksAction{
+    data class OpenBook(val inAppBookId: String): RandomBooksAction
+}
 
 data class RandomBooksUiState(
     val isLoading: Boolean = true,
