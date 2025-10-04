@@ -34,15 +34,15 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
         TODO("Not yet implemented")
     }
 
-    override suspend fun getBookVoiceovers(internalVoiceoverId: String): List<ParsedVoiceover> =
+    override suspend fun getBookVoiceovers(internalBookId: String): List<ParsedVoiceover> =
         coroutineScope {
-            val url = "${source.baseUrl}/book/$internalVoiceoverId/"
+            val url = "${source.baseUrl}/book/$internalBookId/"
             val bookPageDocument = Jsoup.connect(url)
                 .userAgent("Chrome/4.0.249.0 Safari/532.5")
                 .referrer("http://www.google.com")
                 .get()
 
-            val mainVoiceover = parseVoiceover(bookPageDocument, internalVoiceoverId)
+            val mainVoiceover = parseVoiceover(bookPageDocument)
 
             val otherVoiceoversIds = bookPageDocument.selectFirst(".book_serie_block")?.let {
                 it.select(".book_serie_block_item")
@@ -61,7 +61,7 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
                             .userAgent("Chrome/4.0.249.0 Safari/532.5")
                             .referrer("http://www.google.com")
                             .get()
-                        parseVoiceover(voiceoverDocument, internalVoiceoverId)
+                        parseVoiceover(voiceoverDocument)
                     }
                 }.awaitAll()
             }
@@ -93,6 +93,7 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
             val series = bookItemMeta.select(".-serie").next().select("a").text()
 
             ParsedBook(
+                source = source,
                 internalId = internalBookId,
                 title = title,
                 authors = authors,
@@ -103,7 +104,7 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
         }
     }
 
-    private fun parseVoiceover(document: Document, internalId: String): ParsedVoiceover {
+    private fun parseVoiceover(document: Document): ParsedVoiceover {
         val scripts = document.getElementsByTag("script")
 
         val mediaItemsRegexResult = scripts.firstNotNullOf { part ->
@@ -130,7 +131,6 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
             .map { it.text() }
 
         val voiceover = ParsedVoiceover(
-            internalId = internalId,
             readers = readers,
             mediaItems = mediaItems
         )

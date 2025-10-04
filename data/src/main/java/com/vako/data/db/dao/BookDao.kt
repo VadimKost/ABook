@@ -48,6 +48,9 @@ interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVoiceoverReaderCrossRefs(crossRefs: List<VoiceoverReaderCrossRef>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExternalBookEntityIds(ids: List<ExternalBookId>)
+
     // endregion
 
     // region --- Complex Insertions ---
@@ -65,10 +68,12 @@ interface BookDao {
         val allMediaItems = mutableListOf<MediaItemEntity>()
         val allBookAuthorRefs = mutableListOf<BookAuthorCrossRef>()
         val allVoiceoverReaderRefs = mutableListOf<VoiceoverReaderCrossRef>()
+        val allExternalBookIds = mutableListOf<ExternalBookId>()
 
         books.forEach { bookWithDetails ->
             allBooks.add(bookWithDetails.book)
             allAuthors.addAll(bookWithDetails.authors)
+            allExternalBookIds.addAll(bookWithDetails.externalBookIds)
 
             bookWithDetails.voiceovers.forEach { voiceover ->
                 allVoiceovers.add(voiceover.voiceover)
@@ -93,8 +98,9 @@ interface BookDao {
         insertMediaItems(allMediaItems)
         insertBookAuthorCrossRefs(allBookAuthorRefs)
         insertVoiceoverReaderCrossRefs(allVoiceoverReaderRefs)
+        insertExternalBookEntityIds(allExternalBookIds)
     }
-/*    @Transaction
+    @Transaction
     suspend fun addVoiceoversToBook(inAppId: String, newVoiceovers: List<VoiceoverWithDetails>) {
         val allVoiceovers = mutableListOf<VoiceoverEntity>()
         val allReaders = mutableListOf<ReaderEntity>()
@@ -116,6 +122,6 @@ interface BookDao {
         insertReaders(allReaders)
         insertMediaItems(allMediaItems)
         insertVoiceoverReaderCrossRefs(allVoiceoverReaderRefs)
-    }*/
+    }
     // endregion
 }

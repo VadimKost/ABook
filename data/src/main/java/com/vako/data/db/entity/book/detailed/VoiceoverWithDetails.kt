@@ -29,3 +29,4 @@ data class VoiceoverWithDetails(
     )
     val mediaItems: List<MediaItemEntity>
 )
+

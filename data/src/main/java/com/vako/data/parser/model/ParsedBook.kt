@@ -1,6 +1,9 @@
 package com.vako.data.parser.model
 
+import com.vako.data.parser.Source
+
 data class ParsedBook(
+    val source: Source,
     val internalId: String,
     val title: String,
     val authors: List<String>,
@@ -10,7 +13,6 @@ data class ParsedBook(
 )
 
 data class ParsedVoiceover(
-    val internalId: String,
     val readers: List<String>,
     val mediaItems: List<ParsedMediaItem>
 )

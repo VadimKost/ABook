@@ -27,5 +27,11 @@ data class BookWithDetails(
         parentColumn = "inAppId",
         entityColumn = "bookId"
     )
-    val voiceovers: List<VoiceoverWithDetails>
+    val voiceovers: List<VoiceoverWithDetails>,
+
+    @Relation(
+        parentColumn = "inAppId",
+        entityColumn = "inAppBookId",
+    )
+    val externalBookIds: List<ExternalBookId>
 )

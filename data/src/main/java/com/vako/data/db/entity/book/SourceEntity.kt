@@ -1,11 +1,11 @@
 package com.vako.data.db.entity.book
 
-import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-//Entity to link source to series or book
-//@Entity(tableName = "Source")
-//data class SourceEntity(
-//    val sourceId: String,
-//    val sourceName: String,
-//    val referToId: String
-//)
+data class SourceEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = -1,
+    val referToId: String,
+    val sourceName: String,
+    val sourceId: String,
+)
