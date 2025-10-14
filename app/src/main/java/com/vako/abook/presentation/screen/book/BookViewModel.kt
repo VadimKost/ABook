@@ -5,6 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.vako.abook.presentation.screen.random_books.RandomBooksEvent
+import com.vako.domain.book.model.Voiceover
 import com.vako.domain.book.usecases.GetBookByIdUseCase
 import com.vako.domain.shared.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,19 +19,40 @@ import javax.inject.Inject
 @HiltViewModel
 class BookViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val getBookByIdUseCase: GetBookByIdUseCase
+    private val getBookByIdUseCase: GetBookByIdUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BookUiState())
     val state = _state.asStateFlow()
+
+    fun onEvent(event: BookEvent) {
+        when (event) {
+            is BookEvent.VoiceoverSelected -> onVoiceoverSelected(event.voiceover)
+        }
+    }
+
+    fun onVoiceoverSelected(voiceover: Voiceover) {
+        _state.update {
+            it.copy(
+                selectedVoiceover = voiceover
+            )
+        }
+    }
 
     init {
         viewModelScope.launch {
             val bookId = savedStateHandle.toRoute<BookRoute>().inAppId
             val result = getBookByIdUseCase(bookId)
-            Log.e("BookViewModel", "init: $result" )
+            Log.e("BookViewModel", "init: $result")
             if (result is Resource.Success) {
+                val selectedVoiceover = if (
+                    result.data.voiceovers.filter { it.mediaItems.isNotEmpty() }.size <= 1
+                ) result.data.voiceovers.firstOrNull() else null
                 _state.update {
-                    it.copy(book = result.data, isLoading = false)
+                    it.copy(
+                        selectedVoiceover = selectedVoiceover,
+                        book = result.data,
+                        isLoading = false
+                    )
                 }
             }
         }

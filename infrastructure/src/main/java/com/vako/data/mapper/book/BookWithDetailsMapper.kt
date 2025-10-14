@@ -14,6 +14,7 @@ fun ParsedBook.toEntity(): BookWithDetails {
     val bookId = UUID.randomUUID().toString()
     return BookWithDetails(
         book = BookEntity(
+            inAppId = bookId,
             title = this.title,
             cover = this.coverUrl,
             series = this.series?.let {
