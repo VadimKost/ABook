@@ -124,6 +124,7 @@ fun RandomBooksContentPreview() {
             authors = listOf(Author(fullName = "Author 1")),
             voiceovers = listOf(
                 Voiceover(
+                    id = "",
                     readers = listOf(Reader(fullName = "Reader 1")),
                     mediaItems = emptyList()
                 )
@@ -136,6 +137,7 @@ fun RandomBooksContentPreview() {
             authors = listOf(Author(fullName = "Author 2")),
             voiceovers = listOf(
                 Voiceover(
+                    id = "",
                     readers = listOf(Reader(fullName = "Reader 2")),
                     mediaItems = emptyList()
                 )

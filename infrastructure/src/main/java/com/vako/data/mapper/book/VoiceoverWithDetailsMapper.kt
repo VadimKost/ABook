@@ -34,6 +34,7 @@ fun ParsedVoiceover.toVoiceoverWithDetails(inAppId: String): VoiceoverWithDetail
 
 fun VoiceoverWithDetails.toDomain(): Voiceover {
     return Voiceover(
+        id = this.voiceover.id,
         readers = this.readers.map { it.toDomain() },
         mediaItems = this.mediaItems.map { it.toDomain() }
     )

@@ -1,22 +1,26 @@
-package com.vako.abook.di
+package com.vako.data.di
 
 import android.content.Context
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
+import com.vako.data.player.AudioBookPlayer
+import com.vako.domain.player.PlayerGateway
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ServiceComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module
-@InstallIn(ServiceComponent::class)
+@InstallIn(SingletonComponent::class)
 class MediaPlayerModule {
 
     @Provides
-    @ServiceScoped
+    @Singleton
     fun provideExoPlayer(
         @ApplicationContext context: Context,
     ): Player = ExoPlayer.Builder(context)
@@ -24,9 +28,6 @@ class MediaPlayerModule {
         .build()
 
     @Provides
-    @ServiceScoped
-    fun provideMediaSession(
-        @ApplicationContext context: Context,
-        player: Player
-    ): MediaSession = MediaSession.Builder(context, player).build()
+    @Singleton
+    fun providePlayerGateway(impl: AudioBookPlayer): PlayerGateway = impl
 }

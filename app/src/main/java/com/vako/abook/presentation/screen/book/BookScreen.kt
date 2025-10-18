@@ -25,8 +25,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -36,10 +43,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.vako.abook.player.AudioBookPlayer.Companion.rememberServiceAudioBookPlayer
 import com.vako.abook.presentation.components.debugPlaceholder
 import com.vako.domain.book.model.Author
-import com.vako.abook.player.PlayerState
+import com.vako.domain.book.model.Voiceover
+import com.vako.domain.player.usecases.PlaybackCommand
+import com.vako.domain.player.model.PlayerState
 import com.vako.domain.player.model.Playlist
 
 @Composable
@@ -48,53 +56,32 @@ fun BookScreen(
 ) {
     val viewModel: BookViewModel = hiltViewModel()
     val state = viewModel.state.collectAsStateWithLifecycle().value
-    val audioBookPlayer = rememberServiceAudioBookPlayer()
-    val playbackState = audioBookPlayer.state.collectAsStateWithLifecycle().value
 
     BookContent(
-        playerState = playbackState,
+        voiceoverPlaybackState = state.playbackState,
         title = state.book.title,
         authors = state.book.authors,
-        selectedNarratorName = state.book.voiceovers.map { it.readers }.joinToString(),
+        selectedVoiceover = state.selectedVoiceover,
         coverUrl = state.book.cover,
         onSelectVoiceoverClick = {},
-        onPlay = {
-            if (playbackState is PlayerState.Ready){
-                if (playbackState.playlist.mediaItems == state.selectedVoiceover?.mediaItems){
-                    audioBookPlayer.mediaController?.prepare()
-                    audioBookPlayer.mediaController?.play()
-                }
-            } else {
-                val voiceover = state.selectedVoiceover
-                val playlist = voiceover?.let {
-                    Playlist(
-                        name = state.book.title,
-                        cover = state.book.cover,
-                        mediaItems = it.mediaItems
-                    )
-                }
-                playlist?.let {
-                    audioBookPlayer.setPlaylist(it)
-                }
-            }
+        onPlaybackCommand = { command ->
+            viewModel.onEvent(BookEvent.HandlePlaybackCommand(command))
         },
-        onPause = {
-            audioBookPlayer.mediaController?.pause()
-        }
+        voiceovers = state.book.voiceovers
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookContent(
-    playerState: PlayerState,
     title: String,
     authors: List<Author>,
-    selectedNarratorName: String,
     coverUrl: String,
+    voiceovers: List<Voiceover>,
+    selectedVoiceover: Voiceover?,
+    voiceoverPlaybackState: VoiceoverPlaybackState,
     onSelectVoiceoverClick: () -> Unit,
-    onPlay: () -> Unit = {},
-    onPause: () -> Unit = {},
+    onPlaybackCommand: (PlaybackCommand) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -133,10 +120,13 @@ fun BookContent(
                                 "Author: ${authors.joinToString { it.fullName }}",
                                 style = MaterialTheme.typography.titleMedium
                             )
-                            Text(
-                                "Narrator: $selectedNarratorName",
-                                style = MaterialTheme.typography.titleSmall
-                            )
+                            val readers = selectedVoiceover?.readers
+                            if (readers != null) {
+                                Text(
+                                    "Narrator: ${readers.joinToString()}",
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                            }
                         }
 
                         Icon(
@@ -163,9 +153,22 @@ fun BookContent(
                     }
                     Box(Modifier.weight(1f))
                     PlayerControls(
-                        playerState = playerState,
-                        onPlay = onPlay,
-                        onPause = onPause
+                        voiceoverPlaybackState = voiceoverPlaybackState,
+                        onPlaybackCommand = onPlaybackCommand,
+                        onInitPlayback = {
+                            val mediaItems = selectedVoiceover?.mediaItems
+                            mediaItems?.let {
+                                val playlist = Playlist(
+                                    name = title,
+                                    cover = coverUrl,
+                                    mediaItems = it
+                                )
+                                onPlaybackCommand(PlaybackCommand.SetPlaylist(playlist))
+                                onPlaybackCommand(PlaybackCommand.Play)
+                            }
+
+
+                        }
                     )
                 }
             }
@@ -174,81 +177,149 @@ fun BookContent(
 }
 
 @Composable
-fun PlayerControls(
-    playerState: PlayerState,
-    onPlay: () -> Unit,
-    onPause: () -> Unit
+fun PlayerPlaybackProgress(
+    currentPosition: Long,
+    totalDuration: Long,
+    onSeekTo: (Long) -> Unit,
 ) {
-    if (playerState is PlayerState.Ready) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(32.dp)
-                )
-            }
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.FastRewind,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(32.dp)
-                )
-            }
-            val playIcon =
-                if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
+    var sliderPosition by remember { mutableFloatStateOf(0F) }
+    var isDragging by remember { mutableStateOf(false) }
 
-            FilledIconButton(
-                onClick = {}
+    LaunchedEffect(currentPosition, isDragging) {
+        if (!isDragging) {
+            sliderPosition = currentPosition.toFloat()
+        }
+    }
+
+    Column {
+        Slider(
+            value = sliderPosition,
+            onValueChange = {
+                isDragging = true
+                sliderPosition = it
+            },
+            onValueChangeFinished = {
+                isDragging = false
+                val seekTime = sliderPosition.toLong()
+                onSeekTo(seekTime)
+            },
+            valueRange = 0f..(totalDuration * 1000).toFloat(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(formatTime(sliderPosition.toLong()))
+            Text(formatTime(totalDuration * 1000))
+        }
+    }
+}
+
+private fun formatTime(durationMs: Long): String {
+    val totalSeconds = durationMs / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "$minutes:$seconds"
+}
+
+@Composable
+fun PlayerControls(
+    voiceoverPlaybackState: VoiceoverPlaybackState,
+    onPlaybackCommand: (PlaybackCommand) -> Unit,
+    onInitPlayback: () -> Unit
+) {
+    if (voiceoverPlaybackState.isSelectedVoiceoverActive) {
+        Column(Modifier.fillMaxWidth()) {
+            val currentMediaItemIndex = voiceoverPlaybackState.trackIndex
+            val currentMediaItem =
+                voiceoverPlaybackState.playlist.mediaItems[currentMediaItemIndex]
+            val totalDuration = currentMediaItem.duration
+            PlayerPlaybackProgress(
+                currentPosition = voiceoverPlaybackState.positionMs,
+                totalDuration = totalDuration,
+                onSeekTo = { position ->
+                    onPlaybackCommand(
+                        PlaybackCommand.SeekTo(
+                            currentMediaItemIndex,
+                            position
+                        )
+                    )
+                }
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = playIcon,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(32.dp)
-                        .clickable {
-                            if (playerState.isPlaying) {
-                                onPause()
-                            } else {
-                                onPlay()
-                            }
+                IconButton(
+                    onClick = { onPlaybackCommand(PlaybackCommand.Previous) },
+                    enabled = voiceoverPlaybackState.hasPrevious()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(32.dp)
+                    )
+                }
+                IconButton(onClick = { onPlaybackCommand(PlaybackCommand.Rewind) }) {
+                    Icon(
+                        imageVector = Icons.Default.FastRewind,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(32.dp)
+                    )
+                }
+                val playIcon =
+                    if (voiceoverPlaybackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
+
+                FilledIconButton(
+                    onClick = {
+                        if (voiceoverPlaybackState.isPlaying) {
+                            onPlaybackCommand(PlaybackCommand.Pause)
+                        } else {
+                            onPlaybackCommand(PlaybackCommand.Play)
                         }
-                )
-            }
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.FastForward,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(32.dp)
-                )
-            }
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(32.dp)
-                )
+                    }
+                ) {
+                    Icon(
+                        imageVector = playIcon,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(32.dp)
+                    )
+                }
+                IconButton(onClick = { onPlaybackCommand(PlaybackCommand.FastForward) }) {
+                    Icon(
+                        imageVector = Icons.Default.FastForward,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(32.dp)
+                    )
+                }
+                IconButton(
+                    onClick = { onPlaybackCommand(PlaybackCommand.Next) },
+                    enabled = voiceoverPlaybackState.hasNext()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(32.dp)
+                    )
+                }
             }
         }
+
     } else {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
             FilledIconButton(
-                onClick = {}
+                onClick = onInitPlayback
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
@@ -256,7 +327,6 @@ fun PlayerControls(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .size(32.dp)
-                        .clickable { onPlay() }
                 )
             }
         }
@@ -267,11 +337,13 @@ fun PlayerControls(
 @Composable
 private fun BookPreview() {
     BookContent(
-        playerState = PlayerState.Initializing,
         title = "Test Book",
         authors = listOf(Author(fullName = "Test Author")),
-        selectedNarratorName = "Test Narrator",
         coverUrl = "",
         onSelectVoiceoverClick = {},
+        voiceoverPlaybackState = VoiceoverPlaybackState(),
+        onPlaybackCommand = {},
+        voiceovers = listOf(),
+        selectedVoiceover = null,
     )
 }
