@@ -17,5 +17,5 @@ data class MediaItemEntity(
     val title: String,
 
     @ColumnInfo(name = "duration")
-    val duration: Long
+    val durationS: Long
 )

@@ -26,7 +26,7 @@ fun ParsedVoiceover.toVoiceoverWithDetails(inAppId: String): VoiceoverWithDetail
                 url = mi.url,
                 voiceoverId = voiceoverId,
                 title = mi.title,
-                duration = mi.duration
+                durationS = mi.duration
             )
         }
     )

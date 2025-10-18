@@ -1,18 +1,26 @@
 package com.vako.abook.presentation.screen.book
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -21,6 +29,7 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +43,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,12 +55,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.vako.abook.presentation.components.PlayerControls
 import com.vako.abook.presentation.components.debugPlaceholder
+import com.vako.abook.presentation.components.formatTime
 import com.vako.domain.book.model.Author
 import com.vako.domain.book.model.Voiceover
+import com.vako.domain.player.SleepTimer
 import com.vako.domain.player.usecases.PlaybackCommand
-import com.vako.domain.player.model.PlayerState
 import com.vako.domain.player.model.Playlist
+import com.vako.domain.player.model.SleepTimerState
 
 @Composable
 fun BookScreen(
@@ -97,18 +112,59 @@ fun BookContent(
                     .padding(it)
                     .fillMaxSize()
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(coverUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1.6f),
-                    placeholder = debugPlaceholder()
-                )
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1.6f)
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(coverUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxHeight(),
+                        placeholder = debugPlaceholder()
+                    )
+                    if (voiceoverPlaybackState.sleepTimer.isRunning) {
+                        Text(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .clip(RoundedCornerShape(12))
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            text = formatTime(voiceoverPlaybackState.sleepTimer.timeRemainingSeconds * 1000L),
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                    ) {
+                        FilledTonalIconButton(
+                            onClick = {}
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "",
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        FilledTonalIconButton(
+                            onClick = {}
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FavoriteBorder,
+                                contentDescription = "",
+                            )
+                        }
+
+                    }
+                }
+
                 Column(
                     Modifier
                         .weight(1f)
@@ -129,22 +185,20 @@ fun BookContent(
                             }
                         }
 
+
                         Icon(
-                            imageVector = Icons.Default.Mic,
+                            imageVector = Icons.Default.Alarm,
                             contentDescription = "",
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .size(24.dp)
+                                .clickable {
+                                    // TODO: Remove Default alarm action
+                                    onPlaybackCommand(PlaybackCommand.SetSleepTimer(2))
+                                }
                         )
                         Icon(
-                            imageVector = Icons.Default.Mic,
-                            contentDescription = "",
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .size(24.dp)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Mic,
+                            imageVector = Icons.Default.Download,
                             contentDescription = "",
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
@@ -166,184 +220,29 @@ fun BookContent(
                                 onPlaybackCommand(PlaybackCommand.SetPlaylist(playlist))
                                 onPlaybackCommand(PlaybackCommand.Play)
                             }
-
-
                         }
                     )
                 }
             }
         }
     )
-}
-
-@Composable
-fun PlayerPlaybackProgress(
-    currentPosition: Long,
-    totalDuration: Long,
-    onSeekTo: (Long) -> Unit,
-) {
-    var sliderPosition by remember { mutableFloatStateOf(0F) }
-    var isDragging by remember { mutableStateOf(false) }
-
-    LaunchedEffect(currentPosition, isDragging) {
-        if (!isDragging) {
-            sliderPosition = currentPosition.toFloat()
-        }
-    }
-
-    Column {
-        Slider(
-            value = sliderPosition,
-            onValueChange = {
-                isDragging = true
-                sliderPosition = it
-            },
-            onValueChangeFinished = {
-                isDragging = false
-                val seekTime = sliderPosition.toLong()
-                onSeekTo(seekTime)
-            },
-            valueRange = 0f..(totalDuration * 1000).toFloat(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(formatTime(sliderPosition.toLong()))
-            Text(formatTime(totalDuration * 1000))
-        }
-    }
-}
-
-private fun formatTime(durationMs: Long): String {
-    val totalSeconds = durationMs / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "$minutes:$seconds"
-}
-
-@Composable
-fun PlayerControls(
-    voiceoverPlaybackState: VoiceoverPlaybackState,
-    onPlaybackCommand: (PlaybackCommand) -> Unit,
-    onInitPlayback: () -> Unit
-) {
-    if (voiceoverPlaybackState.isSelectedVoiceoverActive) {
-        Column(Modifier.fillMaxWidth()) {
-            val currentMediaItemIndex = voiceoverPlaybackState.trackIndex
-            val currentMediaItem =
-                voiceoverPlaybackState.playlist.mediaItems[currentMediaItemIndex]
-            val totalDuration = currentMediaItem.duration
-            PlayerPlaybackProgress(
-                currentPosition = voiceoverPlaybackState.positionMs,
-                totalDuration = totalDuration,
-                onSeekTo = { position ->
-                    onPlaybackCommand(
-                        PlaybackCommand.SeekTo(
-                            currentMediaItemIndex,
-                            position
-                        )
-                    )
-                }
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                IconButton(
-                    onClick = { onPlaybackCommand(PlaybackCommand.Previous) },
-                    enabled = voiceoverPlaybackState.hasPrevious()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipPrevious,
-                        contentDescription = "",
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(32.dp)
-                    )
-                }
-                IconButton(onClick = { onPlaybackCommand(PlaybackCommand.Rewind) }) {
-                    Icon(
-                        imageVector = Icons.Default.FastRewind,
-                        contentDescription = "",
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(32.dp)
-                    )
-                }
-                val playIcon =
-                    if (voiceoverPlaybackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
-
-                FilledIconButton(
-                    onClick = {
-                        if (voiceoverPlaybackState.isPlaying) {
-                            onPlaybackCommand(PlaybackCommand.Pause)
-                        } else {
-                            onPlaybackCommand(PlaybackCommand.Play)
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = playIcon,
-                        contentDescription = "",
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(32.dp)
-                    )
-                }
-                IconButton(onClick = { onPlaybackCommand(PlaybackCommand.FastForward) }) {
-                    Icon(
-                        imageVector = Icons.Default.FastForward,
-                        contentDescription = "",
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(32.dp)
-                    )
-                }
-                IconButton(
-                    onClick = { onPlaybackCommand(PlaybackCommand.Next) },
-                    enabled = voiceoverPlaybackState.hasNext()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "",
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(32.dp)
-                    )
-                }
-            }
-        }
-
-    } else {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            FilledIconButton(
-                onClick = onInitPlayback
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(32.dp)
-                )
-            }
-        }
-    }
 }
 
 @Preview
 @Composable
 private fun BookPreview() {
-    BookContent(
-        title = "Test Book",
-        authors = listOf(Author(fullName = "Test Author")),
-        coverUrl = "",
-        onSelectVoiceoverClick = {},
-        voiceoverPlaybackState = VoiceoverPlaybackState(),
-        onPlaybackCommand = {},
-        voiceovers = listOf(),
-        selectedVoiceover = null,
-    )
+    MaterialTheme {
+        BookContent(
+            title = "Test Book",
+            authors = listOf(Author(fullName = "Test Author")),
+            coverUrl = "",
+            onSelectVoiceoverClick = {},
+            voiceoverPlaybackState = VoiceoverPlaybackState(
+                sleepTimer = SleepTimerState(isRunning = true, timeRemainingSeconds = 1250)
+            ),
+            onPlaybackCommand = {},
+            voiceovers = listOf(),
+            selectedVoiceover = null,
+        )
+    }
 }

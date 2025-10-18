@@ -6,12 +6,12 @@ import com.vako.domain.shared.model.MediaItem
 fun MediaItem.toEntity(voiceoverId: String) = MediaItemEntity(
     url = this.uri,
     title = this.title,
-    duration = this.duration,
+    durationS = this.durationS,
     voiceoverId = voiceoverId
 )
 
 fun MediaItemEntity.toDomain() = MediaItem(
     uri = this.url,
     title = this.title,
-    duration = this.duration
+    durationS = this.durationS
 )
