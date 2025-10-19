@@ -10,12 +10,15 @@ import com.vako.domain.player.model.SleepTimerState
 sealed interface BookEvent {
     data class VoiceoverSelected(val voiceover: Voiceover) : BookEvent
     data class HandlePlaybackCommand(val command: PlaybackCommand) : BookEvent
+    data class ShowVoiceoverSelectionDialog(val show: Boolean) : BookEvent
 }
 
 sealed interface BookAction
 
 data class BookUiState(
     val isLoading: Boolean = true,
+    val showVoiceoverSelectionDialog: Boolean = false,
+    val showSleepTimerDialog: Boolean = false,
     val book: Book = Book(
         inAppId = "",
         title = "",

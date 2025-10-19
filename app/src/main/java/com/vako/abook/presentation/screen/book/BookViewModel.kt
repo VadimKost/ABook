@@ -51,11 +51,19 @@ class BookViewModel @Inject constructor(
     fun onEvent(event: BookEvent) {
         when (event) {
             is BookEvent.VoiceoverSelected -> onVoiceoverSelected(event.voiceover)
-            is BookEvent.HandlePlaybackCommand -> handlePlaybackCommand(event.command)
+            is BookEvent.HandlePlaybackCommand -> onHandlePlaybackCommand(event.command)
+            is BookEvent.ShowVoiceoverSelectionDialog -> onShowVoiceoverSelectionDialog(event.show)
         }
     }
 
-    fun handlePlaybackCommand(command: PlaybackCommand) {
+    fun onShowVoiceoverSelectionDialog(show: Boolean) {
+        _state.update {
+            it.copy(
+                showVoiceoverSelectionDialog = show
+            )
+        }
+    }
+    fun onHandlePlaybackCommand(command: PlaybackCommand) {
         handlePlaybackCommandUseCase(command)
     }
 
