@@ -53,9 +53,16 @@ class BookViewModel @Inject constructor(
             is BookEvent.VoiceoverSelected -> onVoiceoverSelected(event.voiceover)
             is BookEvent.HandlePlaybackCommand -> onHandlePlaybackCommand(event.command)
             is BookEvent.ShowVoiceoverSelectionDialog -> onShowVoiceoverSelectionDialog(event.show)
+            is BookEvent.ShowSleepTimerDialog -> onShowSleepTimerDialog(event.show)
         }
     }
-
+    fun onShowSleepTimerDialog(show: Boolean) {
+        _state.update {
+            it.copy(
+                showSleepTimerDialog = show
+            )
+        }
+    }
     fun onShowVoiceoverSelectionDialog(show: Boolean) {
         _state.update {
             it.copy(

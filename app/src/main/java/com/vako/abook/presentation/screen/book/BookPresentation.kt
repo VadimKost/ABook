@@ -11,6 +11,7 @@ sealed interface BookEvent {
     data class VoiceoverSelected(val voiceover: Voiceover) : BookEvent
     data class HandlePlaybackCommand(val command: PlaybackCommand) : BookEvent
     data class ShowVoiceoverSelectionDialog(val show: Boolean) : BookEvent
+    data class ShowSleepTimerDialog(val show: Boolean) : BookEvent
 }
 
 sealed interface BookAction

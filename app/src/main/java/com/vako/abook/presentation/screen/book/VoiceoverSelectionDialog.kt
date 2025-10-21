@@ -3,6 +3,7 @@ package com.vako.abook.presentation.screen.book
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -67,14 +69,22 @@ private fun VoiceoverSelectionDialogContent(
             .fillMaxWidth()
             .heightIn(max = 360.dp)
     ) {
-        Text(
-            text = "Select Voiceover",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .padding(top = 8.dp)
-                .align(Alignment.CenterHorizontally)
-        )
+        val backgroundColor = MaterialTheme.colorScheme.secondaryContainer
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(backgroundColor)
+        ) {
+            Text(
+                text = "Select Voiceover",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
+                    .align(Alignment.Center)
+            )
+        }
         Column(
             modifier = Modifier
                 .padding(16.dp)
@@ -92,8 +102,7 @@ private fun VoiceoverSelectionDialogContent(
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
-
+        HorizontalDivider()
         TextButton(
             onClick = onClose,
             modifier = Modifier.align(Alignment.End)
@@ -102,6 +111,7 @@ private fun VoiceoverSelectionDialogContent(
         }
     }
 }
+
 @Composable
 fun VoiceoverSelectionItem(
     voiceover: Voiceover,
@@ -109,22 +119,23 @@ fun VoiceoverSelectionItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-    else Color.Transparent
+    val backgroundColor = if (isSelected)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+    else
+        Color.Transparent
 
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = voiceover.readers.joinToString(", ") { it.fullName },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                style = MaterialTheme.typography.bodyLarge
             )
             Text(
                 text = "${voiceover.mediaItems.size} tracks, ${
@@ -151,6 +162,7 @@ private fun formatTotalDuration(items: List<MediaItem>): String {
     val seconds = totalSeconds % 60
     return "%d:%02d".format(minutes, seconds)
 }
+
 @Preview
 @Composable
 private fun VoiceoverSelectionDialogPreview() {

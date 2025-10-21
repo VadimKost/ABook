@@ -74,6 +74,11 @@ fun BookScreen(
             viewModel.onEvent(
                 BookEvent.ShowVoiceoverSelectionDialog(show)
             )
+        },
+        onShowSleepTimerDialog = { show ->
+            viewModel.onEvent(
+                BookEvent.ShowSleepTimerDialog(show)
+            )
         }
     )
 }
@@ -91,7 +96,8 @@ fun BookContent(
     voiceoverPlaybackState: VoiceoverPlaybackState,
     onSelectVoiceoverClick: (Voiceover) -> Unit,
     onPlaybackCommand: (PlaybackCommand) -> Unit,
-    onShowVoiceoverSelectionDialog: (Boolean) -> Unit
+    onShowVoiceoverSelectionDialog: (Boolean) -> Unit,
+    onShowSleepTimerDialog: (Boolean) -> Unit
 ) {
     if (showVoiceoverSelectionDialog) {
         VoiceoverSelectionDialog(
@@ -99,6 +105,15 @@ fun BookContent(
             selectedVoiceover = selectedVoiceover,
             onDismissRequest = { onShowVoiceoverSelectionDialog(false) },
             onSelectVoiceover = onSelectVoiceoverClick
+        )
+    }
+    
+    if (showSleepTimerDialog){
+        SleepTimerDialog(
+            onDismissRequest = { onShowSleepTimerDialog(false) },
+            onSelectTime = { seconds ->
+                onPlaybackCommand(PlaybackCommand.SetSleepTimer(seconds))
+            }
         )
     }
     Scaffold(
@@ -195,10 +210,7 @@ fun BookContent(
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .size(24.dp)
-                                .clickable {
-                                    // TODO: Remove Default alarm action
-                                    onPlaybackCommand(PlaybackCommand.SetSleepTimer(2))
-                                }
+                                .clickable { onShowSleepTimerDialog(true) }
                         )
                         Icon(
                             imageVector = Icons.Default.Download,
@@ -249,6 +261,7 @@ private fun BookPreview() {
             showVoiceoverSelectionDialog = false,
             showSleepTimerDialog = false,
             onShowVoiceoverSelectionDialog = {},
+            onShowSleepTimerDialog = {},
         )
     }
 }

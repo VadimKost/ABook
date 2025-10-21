@@ -1,5 +1,6 @@
 package com.vako.abook.player
 
+import android.content.Intent
 import androidx.media3.common.Player
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -29,5 +30,9 @@ class PlaybackService : MediaSessionService() {
 
         }
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
     }
 }
