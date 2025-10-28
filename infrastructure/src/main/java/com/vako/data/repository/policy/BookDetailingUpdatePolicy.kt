@@ -11,7 +11,7 @@ class BookDetailingUpdatePolicy {
             val deltaDays = TimeUnit.MILLISECONDS.toDays(modifiedAt - createdAt)
 
             if (createdAt == modifiedAt) return true
-            return if (deltaDays >= 1) return true else false
+            return if (deltaDays >= 10) return true else false
         }
     }
 

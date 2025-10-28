@@ -42,7 +42,6 @@ import com.vako.abook.presentation.components.debugPlaceholder
 import com.vako.abook.presentation.components.formatTime
 import com.vako.domain.book.model.Author
 import com.vako.domain.book.model.Voiceover
-import com.vako.domain.player.model.Playlist
 import com.vako.domain.player.model.SleepTimerState
 import com.vako.domain.player.usecases.PlaybackCommand
 
@@ -75,6 +74,7 @@ fun BookScreen(
                 BookEvent.ShowVoiceoverSelectionDialog(show)
             )
         },
+        bookId = state.book.inAppId,
         onShowSleepTimerDialog = { show ->
             viewModel.onEvent(
                 BookEvent.ShowSleepTimerDialog(show)
@@ -88,6 +88,7 @@ fun BookScreen(
 fun BookContent(
     showVoiceoverSelectionDialog: Boolean,
     showSleepTimerDialog: Boolean,
+    bookId: String,
     title: String,
     authors: List<Author>,
     coverUrl: String,
@@ -225,15 +226,11 @@ fun BookContent(
                         voiceoverPlaybackState = voiceoverPlaybackState,
                         onPlaybackCommand = onPlaybackCommand,
                         onInitPlayback = {
-                            val mediaItems = selectedVoiceover?.mediaItems
-                            mediaItems?.let {
-                                val playlist = Playlist(
-                                    name = title,
-                                    cover = coverUrl,
-                                    mediaItems = it
-                                )
-                                onPlaybackCommand(PlaybackCommand.SetPlaylist(playlist))
-                                onPlaybackCommand(PlaybackCommand.Play)
+                            selectedVoiceover?.let { selectedVoiceover ->
+                                onPlaybackCommand(PlaybackCommand.StartBookVoiceoverPlayback(
+                                    bookId = bookId,
+                                    voiceoverId = selectedVoiceover.id
+                                ))
                             }
                         }
                     )
@@ -262,6 +259,7 @@ private fun BookPreview() {
             showSleepTimerDialog = false,
             onShowVoiceoverSelectionDialog = {},
             onShowSleepTimerDialog = {},
+            bookId = "1"
         )
     }
 }

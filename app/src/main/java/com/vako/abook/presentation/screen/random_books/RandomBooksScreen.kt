@@ -1,5 +1,9 @@
 package com.vako.abook.presentation.screen.random_books
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,9 +14,12 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,8 +53,25 @@ fun RandomBooksScreen(
         gridState = gridState,
         isLoading = state.isLoading,
         onScrollToEnd = { viewModel.onEvent(RandomBooksEvent.LoadMore) },
-        onBookClick = { onAction(RandomBooksAction.OpenBook(it)) }
+        onBookClick = { onAction(RandomBooksAction.OpenBook(it)) },
+        onSearchClick = { viewModel.onEvent(RandomBooksEvent.Search(it)) }
     )
+
+    // TODO: Redo after search implementation
+    LaunchedEffect(state.searchRequest) {
+        val goto = state.searchRequest
+        if (goto != null) {
+            onAction(RandomBooksAction.OpenBook(goto))
+            viewModel.onEvent(RandomBooksEvent.SearchRequestHandled)
+        }
+    }
+}
+
+fun Context.getLastClipboardText(): String? {
+    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clipData: ClipData? = clipboard.primaryClip
+    val item = clipData?.getItemAt(0)
+    return item?.text?.toString()?.trim()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +82,7 @@ private fun RandomBooksContent(
     isLoading: Boolean,
     onScrollToEnd: () -> Unit,
     onBookClick: (String) -> Unit,
+    onSearchClick: (String) -> Unit
 ) {
     LaunchedEffect(gridState, randomBooks.size) {
         snapshotFlow { gridState.layoutInfo }
@@ -67,12 +93,26 @@ private fun RandomBooksContent(
                 }
             }
     }
-
+    val context = LocalContext.current
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text("Random Books")
+                },
+                actions = {
+                    Icon(
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .clickable {
+                                val s = context.getLastClipboardText()
+                                s?.let {
+                                    onSearchClick(it)
+                                }
+                            },
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search Icon"
+                    )
                 }
             )
         },
@@ -149,7 +189,8 @@ fun RandomBooksContentPreview() {
         gridState = rememberLazyGridState(),
         isLoading = true,
         onScrollToEnd = {},
-        onBookClick = {}
+        onBookClick = {},
+        onSearchClick = {}
     )
 }
 

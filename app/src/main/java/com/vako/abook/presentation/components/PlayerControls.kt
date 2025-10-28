@@ -17,11 +17,15 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.vako.abook.presentation.screen.book.VoiceoverPlaybackState
+import com.vako.domain.player.model.AudioBookVoiceoverPlaylist
 import com.vako.domain.player.model.Playlist
 import com.vako.domain.player.usecases.PlaybackCommand
 import com.vako.domain.shared.model.MediaItem
@@ -36,6 +40,15 @@ fun PlayerControls(
 ) {
     if (voiceoverPlaybackState.isSelectedVoiceoverActive) {
         Column(Modifier.fillMaxWidth()) {
+            Text(
+                text = voiceoverPlaybackState.playlist.mediaItems[voiceoverPlaybackState.trackIndex].title,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
             if (showPlaybackProgress) {
                 val currentMediaItemIndex = voiceoverPlaybackState.trackIndex
                 val currentMediaItem =
@@ -147,28 +160,32 @@ fun PlayerControls(
 @Composable
 private fun PlayerControlsDefaultPreview() {
     MaterialTheme {
-        PlayerControls(
-            showPlaybackProgress = true,
-            voiceoverPlaybackState = VoiceoverPlaybackState(
-                isPlaying = false,
-                positionMs = 60000,
-                trackIndex = 0,
-                playlist = Playlist(
-                    name = "Sample Playlist",
-                    cover = "null",
-                    mediaItems = listOf(
-                        MediaItem(
-                            uri = "1",
-                            title = "Sample Media Item",
-                            durationS = 300
-                        )
-                    )
+        Surface {
+            PlayerControls(
+                showPlaybackProgress = true,
+                voiceoverPlaybackState = VoiceoverPlaybackState(
+                    isPlaying = false,
+                    positionMs = 60000,
+                    trackIndex = 0,
+                    playlist = AudioBookVoiceoverPlaylist(
+                        name = "Sample Playlist",
+                        cover = "null",
+                        mediaItems = listOf(
+                            MediaItem(
+                                uri = "1",
+                                title = "Sample Media Item",
+                                durationS = 300
+                            )
+                        ),
+                        bookId = "0",
+                        voiceoverId = ""
+                    ),
+                    isSelectedVoiceoverActive = true
                 ),
-                isSelectedVoiceoverActive = true
-            ),
-            onPlaybackCommand = {},
-            onInitPlayback = {}
-        )
+                onPlaybackCommand = {},
+                onInitPlayback = {}
+            )
+        }
     }
 }
 
@@ -176,27 +193,31 @@ private fun PlayerControlsDefaultPreview() {
 @Composable
 private fun PlayerControlsNoProgressPreview() {
     MaterialTheme {
-        PlayerControls(
-            showPlaybackProgress = false,
-            voiceoverPlaybackState = VoiceoverPlaybackState(
-                isPlaying = false,
-                positionMs = 60000,
-                trackIndex = 0,
-                playlist = Playlist(
-                    name = "Sample Playlist",
-                    cover = "null",
-                    mediaItems = listOf(
-                        MediaItem(
-                            uri = "1",
-                            title = "Sample Media Item",
-                            durationS = 300
-                        )
-                    )
+        Surface {
+            PlayerControls(
+                showPlaybackProgress = false,
+                voiceoverPlaybackState = VoiceoverPlaybackState(
+                    isPlaying = false,
+                    positionMs = 60000,
+                    trackIndex = 0,
+                    playlist =  AudioBookVoiceoverPlaylist(
+                        name = "Sample Playlist",
+                        cover = "null",
+                        mediaItems = listOf(
+                            MediaItem(
+                                uri = "1",
+                                title = "Sample Media Item",
+                                durationS = 300
+                            )
+                        ),
+                        bookId = "0",
+                        voiceoverId = ""
+                    ),
+                    isSelectedVoiceoverActive = true
                 ),
-                isSelectedVoiceoverActive = true
-            ),
-            onPlaybackCommand = {},
-            onInitPlayback = {}
-        )
+                onPlaybackCommand = {},
+                onInitPlayback = {}
+            )
+        }
     }
 }

@@ -20,6 +20,8 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
     override val source: Source = Source.KnigaVUhe
     private var page = 0
 
+    private val bookDocumentCache = mutableMapOf<String, Document>()
+
     override suspend fun getRandomBooks(): List<ParsedBook> {
         val url = "${source.baseUrl}/new/?page=$page"
         val newBooksPageDocument = Jsoup.connect(url)
@@ -31,16 +33,28 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
     }
 
     override suspend fun getBook(internalBookId: String): ParsedBook {
-        TODO("Not yet implemented")
+        val bookPageDocument = getCachedBookDocumentIfPresent(internalBookId)
+
+        val title = bookPageDocument.selectFirst(".book_title_name")?.text()?.trim().orEmpty()
+        val authors = bookPageDocument.select("[itemprop=author] a")
+            .map { it.text().trim() }
+            .filter { it.isNotBlank() }
+        val coverUrl = bookPageDocument.select(".book_cover img").attr("src")
+        // TODO: Add Series parsing
+        return ParsedBook(
+            source = source,
+            internalId = internalBookId,
+            title = title,
+            authors = authors,
+            series = null,
+            seriesIndex = 0,
+            coverUrl = coverUrl
+        )
     }
 
     override suspend fun getBookVoiceovers(internalBookId: String): List<ParsedVoiceover> =
         coroutineScope {
-            val url = "${source.baseUrl}/book/$internalBookId/"
-            val bookPageDocument = Jsoup.connect(url)
-                .userAgent("Chrome/4.0.249.0 Safari/532.5")
-                .referrer("http://www.google.com")
-                .get()
+            val bookPageDocument = getCachedBookDocumentIfPresent(internalBookId)
 
             val mainVoiceover = parseVoiceover(bookPageDocument)
 
@@ -139,6 +153,21 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
         return voiceover
     }
 
+    private fun getCachedBookDocumentIfPresent(internalBookId: String): Document {
+        val cacheDocument = bookDocumentCache[internalBookId]
+        return if (cacheDocument == null) {
+            val url = "${source.baseUrl}/book/$internalBookId/"
+            val bookPageDocument = Jsoup.connect(url)
+                .userAgent("Chrome/4.0.249.0 Safari/532.5")
+                .referrer("http://www.google.com")
+                .get()
+            bookDocumentCache[internalBookId] = bookPageDocument
+
+            bookPageDocument
+        } else {
+            cacheDocument
+        }
+    }
 }
 
 private data class PlayerParseResult(

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.vako.data.db.AppDatabase
 import com.vako.data.db.dao.BookDao
+import com.vako.data.db.dao.UserDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,5 +25,8 @@ class StorageModule {
 
     @Provides
     fun provideBookDao(database: AppDatabase): BookDao = database.bookDao()
+
+    @Provides
+    fun provideUserDao(database: AppDatabase): UserDao = database.userDao()
 
 }

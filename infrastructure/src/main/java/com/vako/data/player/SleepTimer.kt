@@ -1,4 +1,4 @@
-package com.vako.domain.player
+package com.vako.data.player
 
 import com.vako.domain.player.model.SleepTimerState
 import kotlinx.coroutines.CoroutineScope

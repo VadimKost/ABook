@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharingCommand
 
 interface PlayerGateway {
     fun observePlayerState(): Flow<PlayerState>
+    fun getCurrentPlayerState(): PlayerState
     fun play()
     fun pause()
     fun seekToNext()

@@ -2,8 +2,6 @@ package com.vako.data.player
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -13,8 +11,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.vako.domain.player.PlayerGateway
-import com.vako.domain.player.SleepTimer
-import com.vako.domain.player.usecases.PlaybackCommand
+import com.vako.domain.player.model.PlaybackProgress
 import com.vako.domain.player.model.PlayerState
 import com.vako.domain.player.model.Playlist
 import com.vako.domain.player.model.SleepTimerState
@@ -67,11 +64,6 @@ class AudioBookPlayer @Inject constructor(
             mediaController = mediaControllerFuture?.get()
             updatePlayerState()
         }, MoreExecutors.directExecutor())
-        // TODO: May replace by it
-//        val intent = Intent().apply {
-//            setComponent(serviceComponent)
-//        }
-//        ContextCompat.startForegroundService(context,intent)
 
         observeActiveState()
     }
@@ -86,14 +78,15 @@ class AudioBookPlayer @Inject constructor(
                 } else if (currentPlayerState is PlayerState.Ready) {
                     mediaController?.let {
                         _playerState.value = currentPlayerState.copy(
-                            isPlaying = it.playWhenReady,
-                            currentTrackIndex = it.currentMediaItemIndex,
-                            currentPosition = it.currentPosition,
+                            playbackProgress = PlaybackProgress(
+                                trackIndex = it.currentMediaItemIndex,
+                                 positionMs = it.currentPosition,
+                            ),
                             sleepTimerState = sleepTimer.state.value
                         )
                     }
                 }
-                delay(500)
+                delay(200)
             }
         }
     }
@@ -157,8 +150,10 @@ class AudioBookPlayer @Inject constructor(
                 PlayerState.Ready(
                     isPlaying = false,
                     playlist = playlist,
-                    currentTrackIndex = 0,
-                    currentPosition = 0,
+                    playbackProgress = PlaybackProgress(
+                        trackIndex = 0,
+                        positionMs = 0L
+                    ),
                     sleepTimerState = SleepTimerState(
                         isRunning = false,
                         timeRemainingSeconds = 0
@@ -185,6 +180,8 @@ class AudioBookPlayer @Inject constructor(
     }
 
     override fun observePlayerState(): Flow<PlayerState> = playerState
+
+    override fun getCurrentPlayerState() = _playerState.value
 
     override fun startSleepTimer(durationInSeconds: Int) {
         sleepTimer.setSleepTimer(durationInSeconds)

@@ -71,7 +71,9 @@ class BookViewModel @Inject constructor(
         }
     }
     fun onHandlePlaybackCommand(command: PlaybackCommand) {
-        handlePlaybackCommandUseCase(command)
+        viewModelScope.launch {
+            handlePlaybackCommandUseCase(command)
+        }
     }
 
     fun onVoiceoverSelected(voiceover: Voiceover) {
@@ -91,8 +93,8 @@ class BookViewModel @Inject constructor(
                 if (playerState is PlayerState.Ready) {
                     VoiceoverPlaybackState(
                         playlist = playerState.playlist,
-                        trackIndex = playerState.currentTrackIndex,
-                        positionMs = playerState.currentPosition,
+                        trackIndex = playerState.playbackProgress.trackIndex,
+                        positionMs = playerState.playbackProgress.positionMs,
                         isPlaying = playerState.isPlaying,
                         sleepTimer = playerState.sleepTimerState,
                         isSelectedVoiceoverActive = isSelectedVoiceoverActive

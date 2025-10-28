@@ -1,7 +1,9 @@
-package com.vako.data.di;
+package com.vako.data.di
 
 import com.vako.data.repository.BookRepositoryImpl
+import com.vako.data.repository.UserRepositoryImpl
 import com.vako.domain.book.BookRepository
+import com.vako.domain.user.UserRepository
 import dagger.Binds
 import dagger.Module
 import javax.inject.Singleton
@@ -15,4 +17,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBookRepository(impl: BookRepositoryImpl): BookRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 }

@@ -22,6 +22,8 @@ interface BookDao {
     @Transaction
     @Query("""SELECT * FROM Book ORDER BY createdAt DESC LIMIT :limit""")
     suspend fun getRandomBooks(limit: Int): List<BookWithDetails>
+    @Query("UPDATE Book SET modifiedAt = :modifiedAt WHERE inAppId = :inAppId")
+    suspend fun updateBookModifiedAt(inAppId: String, modifiedAt: Long)
 
     // endregion
 
