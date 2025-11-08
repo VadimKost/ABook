@@ -28,10 +28,4 @@ data class BookWithDetails(
         entityColumn = "bookId"
     )
     var voiceovers: List<VoiceoverWithDetails>,
-
-    @Relation(
-        parentColumn = "inAppId",
-        entityColumn = "inAppBookId",
-    )
-    val externalBookIds: List<ExternalBookId>
 )

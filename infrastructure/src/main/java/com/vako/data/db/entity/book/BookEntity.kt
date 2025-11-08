@@ -31,3 +31,8 @@ data class BookEntity(
 
     val modifiedAt: Long = System.currentTimeMillis()
 )
+
+data class SeriesEntity(
+    val name: String,
+    val numberInCycle: Int,
+)

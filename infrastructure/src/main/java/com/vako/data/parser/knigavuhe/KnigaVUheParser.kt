@@ -3,9 +3,9 @@ package com.vako.data.parser.knigavuhe
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.vako.data.parser.BooksParser
+import com.vako.data.parser.BookParser
 import com.vako.data.parser.Source
-import com.vako.data.parser.model.ParsedBook
+import com.vako.data.parser.model.ParsedVoiceoverBookMetadata
 import com.vako.data.parser.model.ParsedMediaItem
 import com.vako.data.parser.model.ParsedVoiceover
 import kotlinx.coroutines.async
@@ -15,14 +15,14 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import javax.inject.Inject
 
-class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser() {
+class KnigaVUheParser @Inject constructor(private val gson: Gson) : BookParser() {
 
     override val source: Source = Source.KnigaVUhe
     private var page = 0
 
     private val bookDocumentCache = mutableMapOf<String, Document>()
 
-    override suspend fun getRandomBooks(): List<ParsedBook> {
+    override suspend fun getRandomBooksMetadata(): List<ParsedVoiceoverBookMetadata> {
         val url = "${source.baseUrl}/new/?page=$page"
         val newBooksPageDocument = Jsoup.connect(url)
             .userAgent("Chrome/4.0.249.0 Safari/532.5")
@@ -32,94 +32,34 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
         return parseBookList(newBooksPageDocument)
     }
 
-    override suspend fun getBook(internalBookId: String): ParsedBook {
-        val bookPageDocument = getCachedBookDocumentIfPresent(internalBookId)
+    override suspend fun getBookMetadata(internalVoiceoverId: String): ParsedVoiceoverBookMetadata {
+        val voiceoverPageDocument = getCachedVoiceoverDocumentIfPresent(internalVoiceoverId)
 
-        val title = bookPageDocument.selectFirst(".book_title_name")?.text()?.trim().orEmpty()
-        val authors = bookPageDocument.select("[itemprop=author] a")
+        val title = voiceoverPageDocument.selectFirst(".book_title_name")?.text()?.trim().orEmpty()
+        val authors = voiceoverPageDocument.select("[itemprop=author] a")
             .map { it.text().trim() }
             .filter { it.isNotBlank() }
-        val coverUrl = bookPageDocument.select(".book_cover img").attr("src")
+        val coverUrl = voiceoverPageDocument.select(".book_cover img").attr("src")
         // TODO: Add Series parsing
-        return ParsedBook(
+        return ParsedVoiceoverBookMetadata(
             source = source,
-            internalId = internalBookId,
             title = title,
             authors = authors,
             series = null,
             seriesIndex = 0,
-            coverUrl = coverUrl
+            coverUrl = coverUrl,
+            relatedVoiceoverId = internalVoiceoverId
         )
     }
 
-    override suspend fun getBookVoiceovers(internalBookId: String): List<ParsedVoiceover> =
-        coroutineScope {
-            val bookPageDocument = getCachedBookDocumentIfPresent(internalBookId)
+    override suspend fun getVoiceover(internalVoiceoverId: String): ParsedVoiceover {
+        val voiceoverUrl = "${source.baseUrl}/book/$internalVoiceoverId/"
+        val voiceoverDocument = Jsoup.connect(voiceoverUrl)
+            .userAgent("Chrome/4.0.249.0 Safari/532.5")
+            .referrer("http://www.google.com")
+            .get()
 
-            val mainVoiceover = parseVoiceover(bookPageDocument)
-
-            val otherVoiceoversIds = bookPageDocument.selectFirst(".book_serie_block")?.let {
-                it.select(".book_serie_block_item")
-                    .select("a")
-                    .map { it.attr("href") }
-                    .filter { it.contains("book") }
-                    .map { it.split("/")[2] }
-            }
-
-            Log.e("asd", otherVoiceoversIds.toString())
-            val otherVoiceovers = otherVoiceoversIds?.let {
-                it.map {
-                    async {
-                        val voiceoverUrl = "${source.baseUrl}/book/$it/"
-                        val voiceoverDocument = Jsoup.connect(voiceoverUrl)
-                            .userAgent("Chrome/4.0.249.0 Safari/532.5")
-                            .referrer("http://www.google.com")
-                            .get()
-                        parseVoiceover(voiceoverDocument)
-                    }
-                }.awaitAll()
-            }
-
-            return@coroutineScope (otherVoiceovers ?: emptyList()) + mainVoiceover
-        }
-
-    override suspend fun getBooksInCycle(internalBookId: String): ParsedBook {
-        TODO("Not yet implemented")
-    }
-
-    private fun parseBookList(document: Document): List<ParsedBook> {
-        val bookItems = document.select(".bookkitem")
-
-        return bookItems.map { bookItem ->
-            val authors = bookItem.select(".bookkitem_author")
-                .select("a")
-                .map { it.text() }
-                .toList()
-
-            val bookItemMeta = bookItem.select(".bookkitem_meta")
-
-            val title = bookItem.select("a.bookkitem_name").text()
-            val internalBookId = bookItem.select("a.bookkitem_name")
-                .attr("href")
-                .split("/")[2]
-
-            val cover = bookItem.select(".bookkitem_cover_img").attr("src")
-            val series = bookItemMeta.select(".-serie").next().select("a").text()
-
-            ParsedBook(
-                source = source,
-                internalId = internalBookId,
-                title = title,
-                authors = authors,
-                series = series,
-                seriesIndex = null,
-                coverUrl = cover,
-            )
-        }
-    }
-
-    private fun parseVoiceover(document: Document): ParsedVoiceover {
-        val scripts = document.getElementsByTag("script")
+        val scripts = voiceoverDocument.getElementsByTag("script")
 
         val mediaItemsRegexResult = scripts.firstNotNullOf { part ->
             Regex("""var player = new BookPlayer\([^,]+, (\[\{.*?\}\])""")
@@ -139,30 +79,94 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BooksParser(
             )
         }
 
-        val readers = document.select(".book_title_block")
+        val readers = voiceoverDocument.select(".book_title_block")
             .select("a")
             .filter { it.attr("href").contains("reader") }
             .map { it.text() }
 
         val voiceover = ParsedVoiceover(
             readers = readers,
-            mediaItems = mediaItems
+            mediaItems = mediaItems,
+            source = source,
+            internalId = internalVoiceoverId
         )
-
 
         return voiceover
     }
 
-    private fun getCachedBookDocumentIfPresent(internalBookId: String): Document {
-        val cacheDocument = bookDocumentCache[internalBookId]
+    override suspend fun getAlternativeVoiceovers(internalVoiceoverId: String): List<ParsedVoiceover> =
+        coroutineScope {
+            val bookPageDocument = getCachedVoiceoverDocumentIfPresent(internalVoiceoverId)
+
+            //todo redo search by matchesOwn
+            val cycle = bookPageDocument.selectFirst(":matchesOwn(^\\s*Цикл)")?.parent()
+                ?.select("a[href]")?.map { it.text().trim() to it.absUrl("href") } ?: emptyList()
+            Log.e("asd cycle", cycle.toString())
+
+            //todo redo search by containsOwn
+            val otherVoiceoversIds = bookPageDocument.selectFirst(":containsOwn(Другие озвучки)")
+                ?.parent()
+                ?.select("a")
+                ?.map { it.attr("href") }
+                ?.filter { it.contains("book") }
+                ?.map { it.split("/")[2] }
+
+            Log.e("asd other voice", otherVoiceoversIds.toString())
+            val otherVoiceovers = otherVoiceoversIds?.let { otherVoiceoversIds ->
+                otherVoiceoversIds.map {
+                    async {
+                        getVoiceover(it)
+                    }
+                }.awaitAll()
+            }
+
+            return@coroutineScope otherVoiceovers ?: emptyList()
+        }
+
+    override suspend fun getBooksInCycle(internalBookId: String): List<ParsedVoiceoverBookMetadata> {
+        TODO("Not yet implemented")
+    }
+
+    private fun parseBookList(document: Document): List<ParsedVoiceoverBookMetadata> {
+        val bookItems = document.select(".bookkitem")
+
+        return bookItems.map { bookItem ->
+            val authors = bookItem.select(".bookkitem_author")
+                .select("a")
+                .map { it.text() }
+                .toList()
+
+            val bookItemMeta = bookItem.select(".bookkitem_meta")
+
+            val title = bookItem.select("a.bookkitem_name").text()
+            val internalVoiceoverId = bookItem.select("a.bookkitem_name")
+                .attr("href")
+                .split("/")[2]
+
+            val cover = bookItem.select(".bookkitem_cover_img").attr("src")
+            val series = bookItemMeta.select(".-serie").next().select("a").text()
+
+            ParsedVoiceoverBookMetadata(
+                source = source,
+                title = title,
+                authors = authors,
+                series = series,
+                seriesIndex = null,
+                coverUrl = cover,
+                relatedVoiceoverId = internalVoiceoverId,
+            )
+        }
+    }
+
+    private fun getCachedVoiceoverDocumentIfPresent(internalVoiceoverId: String): Document {
+        val cacheDocument = bookDocumentCache[internalVoiceoverId]
         return if (cacheDocument == null) {
-            val url = "${source.baseUrl}/book/$internalBookId/"
+            val url = "${source.baseUrl}/book/$internalVoiceoverId/"
             val bookPageDocument = Jsoup.connect(url)
                 .userAgent("Chrome/4.0.249.0 Safari/532.5")
                 .referrer("http://www.google.com")
                 .get()
-            bookDocumentCache[internalBookId] = bookPageDocument
-
+            bookDocumentCache[internalVoiceoverId] = bookPageDocument
             bookPageDocument
         } else {
             cacheDocument

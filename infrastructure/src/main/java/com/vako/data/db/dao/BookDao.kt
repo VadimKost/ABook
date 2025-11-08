@@ -51,7 +51,7 @@ interface BookDao {
     suspend fun insertVoiceoverReaderCrossRefs(crossRefs: List<VoiceoverReaderCrossRef>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertExternalBookEntityIds(ids: List<ExternalBookId>)
+    suspend fun insertExternalVoiceoverEntity(externalVoiceoverEntity: List<ExternalVoiceoverEntity>)
 
     // endregion
 
@@ -70,17 +70,17 @@ interface BookDao {
         val allMediaItems = mutableListOf<MediaItemEntity>()
         val allBookAuthorRefs = mutableListOf<BookAuthorCrossRef>()
         val allVoiceoverReaderRefs = mutableListOf<VoiceoverReaderCrossRef>()
-        val allExternalBookIds = mutableListOf<ExternalBookId>()
+        val allExternalVoiceoverEntity = mutableListOf<ExternalVoiceoverEntity>()
 
         books.forEach { bookWithDetails ->
             allBooks.add(bookWithDetails.book)
             allAuthors.addAll(bookWithDetails.authors)
-            allExternalBookIds.addAll(bookWithDetails.externalBookIds)
 
             bookWithDetails.voiceovers.forEach { voiceover ->
                 allVoiceovers.add(voiceover.voiceover)
                 allReaders.addAll(voiceover.readers)
                 allMediaItems.addAll(voiceover.mediaItems)
+                allExternalVoiceoverEntity.add(voiceover.externalVoiceoverEntity)
                 voiceover.readers.forEach { reader ->
                     allVoiceoverReaderRefs.add(
                         VoiceoverReaderCrossRef(voiceover.voiceover.id, reader.id)
@@ -95,12 +95,12 @@ interface BookDao {
 
         insertBooks(allBooks)
         insertAuthors(allAuthors)
-        insertVoiceovers(allVoiceovers)
-        insertReaders(allReaders)
-        insertMediaItems(allMediaItems)
         insertBookAuthorCrossRefs(allBookAuthorRefs)
+        insertReaders(allReaders)
+        insertVoiceovers(allVoiceovers)
+        insertMediaItems(allMediaItems)
         insertVoiceoverReaderCrossRefs(allVoiceoverReaderRefs)
-        insertExternalBookEntityIds(allExternalBookIds)
+        insertExternalVoiceoverEntity(allExternalVoiceoverEntity)
     }
     @Transaction
     suspend fun addVoiceoversToBook(inAppId: String, newVoiceovers: List<VoiceoverWithDetails>) {
@@ -108,11 +108,13 @@ interface BookDao {
         val allReaders = mutableListOf<ReaderEntity>()
         val allMediaItems = mutableListOf<MediaItemEntity>()
         val allVoiceoverReaderRefs = mutableListOf<VoiceoverReaderCrossRef>()
+        val allExternalVoiceoverEntity = mutableListOf<ExternalVoiceoverEntity>()
 
         newVoiceovers.forEach { voiceover ->
             allVoiceovers.add(voiceover.voiceover)
             allReaders.addAll(voiceover.readers)
             allMediaItems.addAll(voiceover.mediaItems)
+            allExternalVoiceoverEntity.add(voiceover.externalVoiceoverEntity)
             voiceover.readers.forEach { reader ->
                 allVoiceoverReaderRefs.add(
                     VoiceoverReaderCrossRef(voiceover.voiceover.id, reader.id)
@@ -124,6 +126,7 @@ interface BookDao {
         insertReaders(allReaders)
         insertMediaItems(allMediaItems)
         insertVoiceoverReaderCrossRefs(allVoiceoverReaderRefs)
+        insertExternalVoiceoverEntity(allExternalVoiceoverEntity)
     }
     // endregion
 }

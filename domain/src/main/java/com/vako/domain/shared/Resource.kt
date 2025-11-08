@@ -1,6 +1,8 @@
 package com.vako.domain.shared
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 sealed interface Resource<T> {
@@ -11,14 +13,16 @@ sealed interface Resource<T> {
 
 suspend fun <T> executeUseCase(
     dispatcher: CoroutineDispatcher,
-    action: suspend () -> Resource<T>
+    action: suspend CoroutineScope.() -> Resource<T>
 ): Resource<T> {
-    return withContext(dispatcher) {
-        try {
-            action()
-        } catch (e: Exception) {
-            print(e.printStackTrace())
-            Resource.Error(ResourceError.Custom(message = e.message ?: ""))
+    return coroutineScope {
+        withContext(dispatcher) {
+            try {
+                action()
+            } catch (e: Exception) {
+                print(e.printStackTrace())
+                Resource.Error(ResourceError.Custom(message = e.message ?: ""))
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ package com.vako.data.db.entity.book.detailed
 import androidx.room.Embedded
 import androidx.room.Junction
 import androidx.room.Relation
+import com.vako.data.db.entity.book.ExternalVoiceoverEntity
 import com.vako.data.db.entity.book.MediaItemEntity
 import com.vako.data.db.entity.book.ReaderEntity
 import com.vako.data.db.entity.book.VoiceoverEntity
@@ -27,6 +28,12 @@ data class VoiceoverWithDetails(
         parentColumn = "id",
         entityColumn = "voiceoverId"
     )
-    val mediaItems: List<MediaItemEntity>
+    val mediaItems: List<MediaItemEntity>,
+
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "voiceoverId"
+    )
+    val externalVoiceoverEntity: ExternalVoiceoverEntity
 )
 

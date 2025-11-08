@@ -2,16 +2,25 @@ package com.vako.data.mapper.book
 
 import com.vako.data.db.entity.book.AuthorEntity
 import com.vako.data.db.entity.book.BookEntity
-import com.vako.data.db.entity.book.ExternalBookId
+import com.vako.data.db.entity.book.ExternalVoiceoverEntity
 import com.vako.data.db.entity.book.SeriesEntity
+import com.vako.data.db.entity.book.VoiceoverEntity
 import com.vako.data.db.entity.book.detailed.BookWithDetails
-import com.vako.data.parser.model.ParsedBook
+import com.vako.data.db.entity.book.detailed.VoiceoverWithDetails
+import com.vako.data.parser.model.ParsedVoiceoverBookMetadata
 import com.vako.domain.book.model.Book
 import com.vako.domain.book.model.Series
 import java.util.UUID
 
-fun ParsedBook.toEntity(): BookWithDetails {
-    val bookId = UUID.randomUUID().toString()
+fun ParsedVoiceoverBookMetadata.toNewEntity(): BookWithDetails = toEntity(
+    bookId = UUID.randomUUID().toString(),
+    voiceoverId = UUID.randomUUID().toString()
+)
+
+fun ParsedVoiceoverBookMetadata.toEntity(
+    bookId: String,
+    voiceoverId: String
+): BookWithDetails {
     return BookWithDetails(
         book = BookEntity(
             inAppId = bookId,
@@ -27,12 +36,19 @@ fun ParsedBook.toEntity(): BookWithDetails {
                 fullName = authorName
             )
         },
-        voiceovers = emptyList(),
-        externalBookIds = listOf(
-            ExternalBookId(
-                inAppBookId = bookId,
-                source = this.source,
-                externalId = this.internalId
+        voiceovers = listOf(
+            VoiceoverWithDetails(
+                voiceover = VoiceoverEntity(
+                    id = voiceoverId,
+                    bookId = bookId
+                ),
+                externalVoiceoverEntity = ExternalVoiceoverEntity(
+                    voiceoverId = voiceoverId,
+                    source = source,
+                    externalId = relatedVoiceoverId
+                ),
+                readers = listOf(),
+                mediaItems = listOf()
             )
         )
     )

@@ -1,5 +1,6 @@
 package com.vako.data.mapper.book
 
+import com.vako.data.db.entity.book.ExternalVoiceoverEntity
 import com.vako.data.db.entity.book.MediaItemEntity
 import com.vako.data.db.entity.book.ReaderEntity
 import com.vako.data.db.entity.book.VoiceoverEntity
@@ -8,8 +9,10 @@ import com.vako.data.parser.model.ParsedVoiceover
 import com.vako.domain.book.model.Voiceover
 import java.util.UUID
 
-fun ParsedVoiceover.toVoiceoverWithDetails(inAppId: String): VoiceoverWithDetails {
-    val voiceoverId = UUID.randomUUID().toString()
+fun ParsedVoiceover.toVoiceoverWithDetails(
+    inAppId: String,
+    voiceoverId: String
+): VoiceoverWithDetails {
     return VoiceoverWithDetails(
         voiceover = VoiceoverEntity(
             id = voiceoverId,
@@ -28,7 +31,12 @@ fun ParsedVoiceover.toVoiceoverWithDetails(inAppId: String): VoiceoverWithDetail
                 title = mi.title,
                 durationS = mi.duration
             )
-        }
+        },
+        externalVoiceoverEntity = ExternalVoiceoverEntity(
+            voiceoverId = voiceoverId,
+            source = this.source,
+            externalId = this.internalId
+        )
     )
 }
 

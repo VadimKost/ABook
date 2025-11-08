@@ -1,18 +1,20 @@
 package com.vako.data.parser
 
-import com.vako.data.parser.model.ParsedBook
+import com.vako.data.parser.model.ParsedVoiceoverBookMetadata
 import com.vako.data.parser.model.ParsedVoiceover
 
-abstract class BooksParser {
+abstract class BookParser {
     abstract val source: Source
 
-    abstract suspend fun getRandomBooks(): List<ParsedBook>
+    abstract suspend fun getRandomBooksMetadata(): List<ParsedVoiceoverBookMetadata>
 
-    abstract suspend fun getBook(internalBookId: String): ParsedBook
+    abstract suspend fun getBookMetadata(internalVoiceoverId: String): ParsedVoiceoverBookMetadata
 
-    abstract suspend fun getBookVoiceovers(internalBookId: String): List<ParsedVoiceover>
+    abstract suspend fun getVoiceover(internalVoiceoverId: String): ParsedVoiceover
 
-    abstract suspend fun getBooksInCycle(internalBookId: String): ParsedBook
+    abstract suspend fun getAlternativeVoiceovers(internalVoiceoverId: String): List<ParsedVoiceover>
+
+    abstract suspend fun getBooksInCycle(internalVoiceoverId: String): List<ParsedVoiceoverBookMetadata>
 }
 
 enum class Source(val baseUrl: String) {
