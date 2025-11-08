@@ -3,6 +3,7 @@ package com.vako.abook.presentation.screen.book
 import com.vako.domain.book.model.Book
 import com.vako.domain.book.model.Series
 import com.vako.domain.book.model.Voiceover
+import com.vako.domain.player.model.AudioBookVoiceoverPlaylist
 import com.vako.domain.player.model.Playlist
 import com.vako.domain.player.usecases.PlaybackCommand
 import com.vako.domain.player.model.SleepTimerState
@@ -12,6 +13,7 @@ sealed interface BookEvent {
     data class HandlePlaybackCommand(val command: PlaybackCommand) : BookEvent
     data class ShowVoiceoverSelectionDialog(val show: Boolean) : BookEvent
     data class ShowSleepTimerDialog(val show: Boolean) : BookEvent
+    data object ToggleIsBookToFavorite : BookEvent
 }
 
 sealed interface BookAction
@@ -28,15 +30,18 @@ data class BookUiState(
         voiceovers = emptyList(),
         series = Series(name = "", seriesIndex = -1)
     ),
+    val isFavoriteBook: Boolean = false,
     val selectedVoiceover: Voiceover? = null,
     val playbackState: VoiceoverPlaybackState = VoiceoverPlaybackState()
 )
 
 data class VoiceoverPlaybackState(
-    val playlist: Playlist = Playlist(
+    val playlist: Playlist = AudioBookVoiceoverPlaylist(
         name = "",
         cover = "",
-        mediaItems = listOf()
+        mediaItems = listOf(),
+        bookId = "",
+        voiceoverId = ""
     ),
     val trackIndex: Int = 0,
     val positionMs: Long = 0,

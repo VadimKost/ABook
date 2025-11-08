@@ -16,6 +16,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.vako.abook.presentation.screen.book.book
 import com.vako.abook.presentation.screen.book.navigateToBook
+import com.vako.abook.presentation.screen.favorite_books.favoriteBooks
 import com.vako.abook.presentation.screen.random_books.RandomBooksRoute
 import com.vako.abook.presentation.screen.random_books.randomBook
 
@@ -59,8 +60,12 @@ fun NavigationRoot() {
                     navController.navigateToBook(bookId)
                 }
             )
-
             book()
+            favoriteBooks(
+                onNavigateToBook = { bookId ->
+                    navController.navigateToBook(bookId)
+                }
+            )
         }
     }
 }

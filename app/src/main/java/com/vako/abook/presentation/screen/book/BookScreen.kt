@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -44,6 +45,7 @@ import com.vako.domain.book.model.Author
 import com.vako.domain.book.model.Voiceover
 import com.vako.domain.player.model.SleepTimerState
 import com.vako.domain.player.usecases.PlaybackCommand
+import com.vako.domain.user.usecases.ToggleIsBookToFavoriteUseCase
 
 @Composable
 fun BookScreen(
@@ -53,11 +55,16 @@ fun BookScreen(
     val state = viewModel.state.collectAsStateWithLifecycle().value
 
     BookContent(
+        bookId = state.book.inAppId,
+        isFavorite = state.isFavoriteBook,
+        voiceovers = state.book.voiceovers,
+        selectedVoiceover = state.selectedVoiceover,
         voiceoverPlaybackState = state.playbackState,
         title = state.book.title,
         authors = state.book.authors,
-        selectedVoiceover = state.selectedVoiceover,
         coverUrl = state.book.cover,
+        showVoiceoverSelectionDialog = state.showVoiceoverSelectionDialog,
+        showSleepTimerDialog = state.showSleepTimerDialog,
         onSelectVoiceoverClick = {
             viewModel.onEvent(
                 BookEvent.VoiceoverSelected(it)
@@ -66,19 +73,18 @@ fun BookScreen(
         onPlaybackCommand = { command ->
             viewModel.onEvent(BookEvent.HandlePlaybackCommand(command))
         },
-        voiceovers = state.book.voiceovers,
-        showVoiceoverSelectionDialog = state.showVoiceoverSelectionDialog,
-        showSleepTimerDialog = state.showSleepTimerDialog,
         onShowVoiceoverSelectionDialog = { show ->
             viewModel.onEvent(
                 BookEvent.ShowVoiceoverSelectionDialog(show)
             )
         },
-        bookId = state.book.inAppId,
         onShowSleepTimerDialog = { show ->
             viewModel.onEvent(
                 BookEvent.ShowSleepTimerDialog(show)
             )
+        },
+        onToggleIsBookToFavorite = {
+            viewModel.onToggleIsBookToFavorite()
         }
     )
 }
@@ -86,19 +92,21 @@ fun BookScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookContent(
-    showVoiceoverSelectionDialog: Boolean,
-    showSleepTimerDialog: Boolean,
     bookId: String,
-    title: String,
-    authors: List<Author>,
-    coverUrl: String,
+    isFavorite: Boolean,
     voiceovers: List<Voiceover>,
     selectedVoiceover: Voiceover?,
     voiceoverPlaybackState: VoiceoverPlaybackState,
+    title: String,
+    authors: List<Author>,
+    coverUrl: String,
+    showVoiceoverSelectionDialog: Boolean,
+    showSleepTimerDialog: Boolean,
     onSelectVoiceoverClick: (Voiceover) -> Unit,
     onPlaybackCommand: (PlaybackCommand) -> Unit,
     onShowVoiceoverSelectionDialog: (Boolean) -> Unit,
-    onShowSleepTimerDialog: (Boolean) -> Unit
+    onShowSleepTimerDialog: (Boolean) -> Unit,
+    onToggleIsBookToFavorite: () -> Unit,
 ) {
     if (showVoiceoverSelectionDialog) {
         VoiceoverSelectionDialog(
@@ -108,8 +116,8 @@ fun BookContent(
             onSelectVoiceover = onSelectVoiceoverClick
         )
     }
-    
-    if (showSleepTimerDialog){
+
+    if (showSleepTimerDialog) {
         SleepTimerDialog(
             onDismissRequest = { onShowSleepTimerDialog(false) },
             onSelectTime = { seconds ->
@@ -164,7 +172,7 @@ fun BookContent(
                             .align(Alignment.BottomCenter)
                     ) {
                         FilledTonalIconButton(
-                            onClick = {onShowVoiceoverSelectionDialog(true)}
+                            onClick = { onShowVoiceoverSelectionDialog(true) }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Mic,
@@ -173,10 +181,16 @@ fun BookContent(
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         FilledTonalIconButton(
-                            onClick = {}
+                            onClick = onToggleIsBookToFavorite
                         ) {
+                            val icon =
+                                if (isFavorite)
+                                    Icons.Default.Favorite
+                                else
+                                    Icons.Default.FavoriteBorder
+
                             Icon(
-                                imageVector = Icons.Default.FavoriteBorder,
+                                imageVector = icon,
                                 contentDescription = "",
                             )
                         }
@@ -227,10 +241,12 @@ fun BookContent(
                         onPlaybackCommand = onPlaybackCommand,
                         onInitPlayback = {
                             selectedVoiceover?.let { selectedVoiceover ->
-                                onPlaybackCommand(PlaybackCommand.StartBookVoiceoverPlayback(
-                                    bookId = bookId,
-                                    voiceoverId = selectedVoiceover.id
-                                ))
+                                onPlaybackCommand(
+                                    PlaybackCommand.StartBookVoiceoverPlayback(
+                                        bookId = bookId,
+                                        voiceoverId = selectedVoiceover.id
+                                    )
+                                )
                             }
                         }
                     )
@@ -259,7 +275,9 @@ private fun BookPreview() {
             showSleepTimerDialog = false,
             onShowVoiceoverSelectionDialog = {},
             onShowSleepTimerDialog = {},
-            bookId = "1"
+            bookId = "1",
+            onToggleIsBookToFavorite = {},
+            isFavorite = false
         )
     }
 }

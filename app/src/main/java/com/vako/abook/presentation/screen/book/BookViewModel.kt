@@ -12,6 +12,8 @@ import com.vako.domain.player.usecases.HandlePlaybackCommandUseCase
 import com.vako.domain.player.usecases.ObservePlayerStateUseCase
 import com.vako.domain.player.usecases.PlaybackCommand
 import com.vako.domain.shared.Resource
+import com.vako.domain.user.usecases.ObserveBookIsFavoriteUseCase
+import com.vako.domain.user.usecases.ToggleIsBookToFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +28,9 @@ class BookViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getBookByIdUseCase: GetBookByIdUseCase,
     private val observePlayerStateUseCase: ObservePlayerStateUseCase,
-    private val handlePlaybackCommandUseCase: HandlePlaybackCommandUseCase
+    private val handlePlaybackCommandUseCase: HandlePlaybackCommandUseCase,
+    private val toggleIsBookToFavoriteUseCase: ToggleIsBookToFavoriteUseCase,
+    private val observeBookIsFavoriteUseCase: ObserveBookIsFavoriteUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(BookUiState())
     val state = _state.asStateFlow()
@@ -46,6 +50,7 @@ class BookViewModel @Inject constructor(
     init {
         loadBook()
         updatePlaybackState()
+        observeIsBookFavorite()
     }
 
     fun onEvent(event: BookEvent) {
@@ -54,8 +59,27 @@ class BookViewModel @Inject constructor(
             is BookEvent.HandlePlaybackCommand -> onHandlePlaybackCommand(event.command)
             is BookEvent.ShowVoiceoverSelectionDialog -> onShowVoiceoverSelectionDialog(event.show)
             is BookEvent.ShowSleepTimerDialog -> onShowSleepTimerDialog(event.show)
+            is BookEvent.ToggleIsBookToFavorite -> onToggleIsBookToFavorite()
         }
     }
+
+    fun observeIsBookFavorite() {
+        viewModelScope.launch {
+            val bookId = savedStateHandle.toRoute<BookRoute>().inAppId
+            observeBookIsFavoriteUseCase(bookId).collect { isFavorite ->
+                _state.update {
+                    it.copy(isFavoriteBook = isFavorite)
+                }
+            }
+        }
+    }
+
+    fun onToggleIsBookToFavorite() {
+        viewModelScope.launch {
+            toggleIsBookToFavoriteUseCase(state.value.book.inAppId)
+        }
+    }
+
     fun onShowSleepTimerDialog(show: Boolean) {
         _state.update {
             it.copy(
@@ -63,6 +87,7 @@ class BookViewModel @Inject constructor(
             )
         }
     }
+
     fun onShowVoiceoverSelectionDialog(show: Boolean) {
         _state.update {
             it.copy(
@@ -70,6 +95,7 @@ class BookViewModel @Inject constructor(
             )
         }
     }
+
     fun onHandlePlaybackCommand(command: PlaybackCommand) {
         viewModelScope.launch {
             handlePlaybackCommandUseCase(command)
@@ -117,11 +143,11 @@ class BookViewModel @Inject constructor(
             val bookId = savedStateHandle.toRoute<BookRoute>().inAppId
             val result = getBookByIdUseCase(bookId)
             if (result is Resource.Success) {
-                val voiceovers = result.data.voiceovers.filter { it.mediaItems.isNotEmpty() }
+                val voiceovers = result.data.voiceovers
                 val selectedVoiceover = voiceovers.first()
-                Log.e("asd",result.data.toString())
-                Log.e("asd",voiceovers.size.toString())
-                Log.e("asd",voiceovers.toString())
+                Log.e("asd book by id", result.data.toString())
+                Log.e("asd book by id voice", voiceovers.size.toString())
+                Log.e("asd book by id voice", voiceovers.toString())
                 /*                val selectedVoiceover =
                                     if (voiceovers.size == 1) result.data.voiceovers.first() else null*/
                 _state.update {
