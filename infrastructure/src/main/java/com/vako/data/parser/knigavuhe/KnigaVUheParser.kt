@@ -123,7 +123,7 @@ class KnigaVUheParser @Inject constructor(private val gson: Gson) : BookParser()
             return@coroutineScope otherVoiceovers ?: emptyList()
         }
 
-    override suspend fun getBooksInCycle(internalBookId: String): List<ParsedVoiceoverBookMetadata> {
+    override suspend fun getBooksInCycle(internalVoiceoverId: String): List<ParsedVoiceoverBookMetadata> {
         TODO("Not yet implemented")
     }
 

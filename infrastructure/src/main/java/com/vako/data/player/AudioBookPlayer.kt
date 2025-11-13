@@ -78,9 +78,10 @@ class AudioBookPlayer @Inject constructor(
                 } else if (currentPlayerState is PlayerState.Ready) {
                     mediaController?.let {
                         _playerState.value = currentPlayerState.copy(
+                            isPlaying = it.playWhenReady,
                             playbackProgress = PlaybackProgress(
                                 trackIndex = it.currentMediaItemIndex,
-                                 positionMs = it.currentPosition,
+                                positionMs = it.currentPosition,
                             ),
                             sleepTimerState = sleepTimer.state.value
                         )

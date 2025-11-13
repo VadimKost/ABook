@@ -10,7 +10,7 @@ import javax.inject.Singleton
 class RestorePlaybackProgressUseCase @Inject constructor(
     private val userRepository: UserRepository
 ) {
-    operator fun invoke(bookId: String, voiceoverId: String): PlaybackProgress? {
+    suspend operator fun invoke(bookId: String, voiceoverId: String): PlaybackProgress? {
         val user = userRepository.getCurrentUser()
         return user.playbackProgress[BookVoiceover(bookId, voiceoverId)]
     }

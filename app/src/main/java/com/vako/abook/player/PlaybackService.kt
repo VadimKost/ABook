@@ -14,10 +14,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class PlaybackService : MediaSessionService() {
@@ -38,10 +38,21 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player).build()
         /*addSession(mediaSession!!)*/
         coroutineScope.launch {
-            observeIsPlaying().collect { playing ->
-                if (!playing) {
-                    savePaybackProgress()
+            observeIsPausedAfterPlaying().collect {
+                Log.e("asd save","save")
+                savePaybackProgress()
+            }
+        }
+    }
+
+    fun observeIsPausedAfterPlaying() = flow {
+        var wasPlaying = false
+        playerGateway.observePlayerState().distinctUntilChanged().collect {
+            if (it is PlayerState.Ready) {
+                if (wasPlaying && !it.isPlaying) {
+                    emit(Unit)
                 }
+                wasPlaying = it.isPlaying
             }
         }
     }
@@ -61,31 +72,23 @@ class PlaybackService : MediaSessionService() {
     }
 
     fun savePaybackProgress() {
-        try {
-            val currentPlayerState = playerGateway.getCurrentPlayerState()
-            if (currentPlayerState is PlayerState.Ready) {
-                val currentPlaylist = currentPlayerState.playlist
-                if (currentPlaylist is AudioBookVoiceoverPlaylist) {
-                    val bookId = currentPlaylist.bookId
-                    val voiceoverId = currentPlaylist.voiceoverId
-                    val progress = currentPlayerState.playbackProgress
-                    runBlocking {
+        coroutineScope.launch {
+            try {
+                val currentPlayerState = playerGateway.getCurrentPlayerState()
+                if (currentPlayerState is PlayerState.Ready) {
+                    val currentPlaylist = currentPlayerState.playlist
+                    if (currentPlaylist is AudioBookVoiceoverPlaylist) {
+                        val bookId = currentPlaylist.bookId
+                        val voiceoverId = currentPlaylist.voiceoverId
+                        val progress = currentPlayerState.playbackProgress
                         savePlaybackProgressUseCase(bookId, voiceoverId, progress)
                     }
                 }
+            } catch (_: Exception) {
+                Log.d("PlaybackService", "Failed to save playback progress")
             }
-        } catch (_: Exception) {
-            Log.d("PlaybackService", "Failed to save playback progress")
         }
     }
-
-    fun observeIsPlaying() = flow {
-        playerGateway.observePlayerState().collect {
-            if (it is PlayerState.Ready) {
-                emit(it.isPlaying)
-            }
-        }
-    }.distinctUntilChanged()
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
