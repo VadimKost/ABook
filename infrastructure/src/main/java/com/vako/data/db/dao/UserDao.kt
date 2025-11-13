@@ -2,6 +2,7 @@ package com.vako.data.db.dao
 
 import androidx.room.*
 import com.vako.data.db.entity.user.*
+import com.vako.data.db.entity.user.detailed.UserWithDetails
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -13,7 +14,7 @@ interface UserDao {
 
     @Transaction
     @Query("SELECT * FROM `User` WHERE isCurrent = 1 LIMIT 1")
-    fun observeCurrentUser(): Flow<UserEntity?>
+    fun observeCurrentUser(): Flow<UserWithDetails?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: UserEntity)

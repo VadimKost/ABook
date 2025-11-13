@@ -4,22 +4,17 @@ import com.vako.data.db.dao.UserDao
 import com.vako.data.db.entity.user.FavoriteBookEntity
 import com.vako.data.db.entity.user.PlaybackProgressEntity
 import com.vako.data.db.entity.user.UserEntity
+import com.vako.data.mapper.user.toDomain
 import com.vako.domain.player.model.PlaybackProgress
 import com.vako.domain.user.UserRepository
 import com.vako.domain.user.model.BookVoiceover
 import com.vako.domain.user.model.User
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.util.UUID
 
 // TODO: Redo and add detailed user entity
 @Singleton
@@ -43,17 +38,14 @@ class UserRepositoryImpl @Inject constructor(
 
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeCurrentUser(): Flow<User?> {
-        return userDao.observeCurrentUser()
-            .flatMapLatest { userEntity ->
-                if (userEntity != null) {
-                    userDao.observeFavorites(userEntity.id)
-                        .map { fulfilledUser(userEntity) }
-                } else {
-                    flowOf(null)
-                }
+    override fun observeCurrentUser(): Flow<User?> = flow {
+        userDao.observeCurrentUser().collect { userWithDetails ->
+            if (userWithDetails != null) {
+                emit(userWithDetails.toDomain())
+            } else {
+                emit(userWithDetails)
             }
+        }
     }
 
     suspend fun fulfilledUser(userEntity: UserEntity): User {

@@ -2,37 +2,57 @@ package com.vako.abook.presentation.screen.favorite_books
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vako.domain.book.model.Book
 import com.vako.domain.shared.Resource
-import com.vako.domain.user.usecases.GetFavoriteBooksUseCase
+import com.vako.domain.user.usecases.ObserveFavoriteBooksUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FavoriteBooksViewModel @Inject constructor(
-    private val getFavoriteBooksUseCase: GetFavoriteBooksUseCase
+    private val observeFavoriteBooksUseCase: ObserveFavoriteBooksUseCase
 ) : ViewModel() {
-    private val _state = MutableStateFlow(FavoriteBooksUiState())
-    val state = _state.asStateFlow()
 
-    init {
-        loadFavoriteBooks()
-    }
+    val state: StateFlow<FavoriteBooksUiState> = observeFavoriteBooksUseCase().map { favoriteBooks ->
+        assembleState(favoriteBooks)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = FavoriteBooksUiState(),
+    )
 
-    private fun loadFavoriteBooks() {
-        viewModelScope.launch {
-            val favoriteBooks = getFavoriteBooksUseCase()
-            if (favoriteBooks is Resource.Success){
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        books = favoriteBooks.data
-                    )
-                }
+    private fun assembleState(favoriteBooksState: Resource<List<Book>>) : FavoriteBooksUiState {
+        return when (favoriteBooksState) {
+            is Resource.Error -> {
+                TODO()
+            }
+
+            is Resource.Pending -> {
+                FavoriteBooksUiState(
+                    isLoading = true,
+                    books = listOf()
+                )
+            }
+
+            is Resource.Success -> {
+                FavoriteBooksUiState(
+                    isLoading = false,
+                    books = favoriteBooksState.data
+                )
             }
         }
     }
+
+    fun onEvent(event: FavoriteBookEvent) {
+        when (event) {
+            else -> TODO()
+        }
+    }
+
 }

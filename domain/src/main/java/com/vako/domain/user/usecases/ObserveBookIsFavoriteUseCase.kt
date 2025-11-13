@@ -3,7 +3,6 @@ package com.vako.domain.user.usecases
 import com.vako.domain.user.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class ObserveBookIsFavoriteUseCase @Inject constructor(
