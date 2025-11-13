@@ -12,6 +12,7 @@ interface UserRepository {
         voiceoverId: String,
         progress: PlaybackProgress
     )
-
+    suspend fun savePreferredVoiceover(userId: String, bookId: String, voiceoverId: String)
+    suspend fun removePreferredVoiceover(userId: String, bookId: String, voiceoverId: String)
     suspend fun toggleIsFavoriteBook(bookId: String): Boolean
 }

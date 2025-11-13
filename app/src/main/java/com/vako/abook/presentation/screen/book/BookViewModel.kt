@@ -12,7 +12,9 @@ import com.vako.domain.player.usecases.HandlePlaybackCommandUseCase
 import com.vako.domain.player.usecases.ObservePlayerStateUseCase
 import com.vako.domain.player.usecases.PlaybackCommand
 import com.vako.domain.shared.Resource
+import com.vako.domain.user.usecases.GetPreferredVoiceoverIdForBookUseCase
 import com.vako.domain.user.usecases.ObserveBookIsFavoriteUseCase
+import com.vako.domain.user.usecases.SavePreferredVoiceoverForBookUseCase
 import com.vako.domain.user.usecases.ToggleIsBookToFavoriteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +32,9 @@ class BookViewModel @Inject constructor(
     private val observePlayerStateUseCase: ObservePlayerStateUseCase,
     private val handlePlaybackCommandUseCase: HandlePlaybackCommandUseCase,
     private val toggleIsBookToFavoriteUseCase: ToggleIsBookToFavoriteUseCase,
-    private val observeBookIsFavoriteUseCase: ObserveBookIsFavoriteUseCase
+    private val observeBookIsFavoriteUseCase: ObserveBookIsFavoriteUseCase,
+    private val savePreferredVoiceoverForBookUseCase: SavePreferredVoiceoverForBookUseCase,
+    private val getPreferredVoiceoverIdForBookUseCase: GetPreferredVoiceoverIdForBookUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BookUiState())
     val state = _state.asStateFlow()
@@ -103,10 +107,16 @@ class BookViewModel @Inject constructor(
     }
 
     fun onVoiceoverSelected(voiceover: Voiceover) {
-        _state.update {
-            it.copy(
-                selectedVoiceover = voiceover
+        viewModelScope.launch {
+            savePreferredVoiceoverForBookUseCase(
+                bookId = state.value.book.inAppId,
+                voiceoverId = voiceover.id
             )
+            _state.update {
+                it.copy(
+                    selectedVoiceover = voiceover
+                )
+            }
         }
     }
 
@@ -144,7 +154,11 @@ class BookViewModel @Inject constructor(
             val result = getBookByIdUseCase(bookId)
             if (result is Resource.Success) {
                 val voiceovers = result.data.voiceovers
-                val selectedVoiceover = voiceovers.first()
+                val preferredVoiceoverId =
+                    getPreferredVoiceoverIdForBookUseCase(bookId)
+                Log.e("asd book preferredVoiceoverId", preferredVoiceoverId.toString())
+                val selectedVoiceover =
+                    voiceovers.find { it.id == preferredVoiceoverId } ?: voiceovers.first()
                 Log.e("asd book by id", result.data.toString())
                 Log.e("asd book by id voice", voiceovers.size.toString())
                 Log.e("asd book by id voice", voiceovers.toString())

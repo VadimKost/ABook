@@ -1,5 +1,6 @@
 package com.vako.data.mapper.user
 
+import com.vako.data.db.entity.user.UserEntity
 import com.vako.data.db.entity.user.detailed.UserWithDetails
 import com.vako.domain.player.model.PlaybackProgress
 import com.vako.domain.user.model.BookVoiceover
@@ -29,3 +30,11 @@ fun UserWithDetails.toDomain(): User {
         playbackProgress = playbackProgress
     )
 }
+
+fun UserEntity.toDomain() = User(
+    id = this.id,
+    displayName = this.displayName,
+    favoriteBookIds = setOf(),
+    preferredVoiceovers = mutableMapOf(),
+    playbackProgress = mutableMapOf()
+)
