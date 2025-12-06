@@ -12,6 +12,6 @@ class RestorePlaybackProgressUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(bookId: String, voiceoverId: String): PlaybackProgress? {
         val user = userRepository.getCurrentUser()
-        return user.playbackProgress[BookVoiceover(bookId, voiceoverId)]
+        return user?.playbackProgress[BookVoiceover(bookId, voiceoverId)]
     }
 }

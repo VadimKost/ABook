@@ -10,20 +10,21 @@ class SavePreferredVoiceoverForBookUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(bookId: String, voiceoverId: String) {
         val user = userRepository.getCurrentUser()
+        if (user != null) {
+            user.preferredVoiceovers[bookId]?.let { existingVoiceoverId ->
+                userRepository.removePreferredVoiceover(
+                    userId = user.id,
+                    bookId = bookId,
+                    voiceoverId = existingVoiceoverId
+                )
+            }
 
-        user.preferredVoiceovers[bookId]?.let { existingVoiceoverId ->
-            userRepository.removePreferredVoiceover(
+            userRepository.savePreferredVoiceover(
                 userId = user.id,
                 bookId = bookId,
-                voiceoverId = existingVoiceoverId
+                voiceoverId = voiceoverId
             )
         }
-
-        userRepository.savePreferredVoiceover(
-            userId = user.id,
-            bookId = bookId,
-            voiceoverId = voiceoverId
-        )
     }
 }
 
