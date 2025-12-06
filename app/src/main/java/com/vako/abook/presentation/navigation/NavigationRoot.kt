@@ -2,7 +2,10 @@ package com.vako.abook.presentation.navigation
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
@@ -14,11 +17,15 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.vako.abook.presentation.screen.book.book
 import com.vako.abook.presentation.screen.book.navigateToBook
 import com.vako.abook.presentation.screen.favorite_books.favoriteBooks
-import com.vako.abook.presentation.screen.random_books.RandomBooksRoute
+import com.vako.abook.presentation.screen.random_books.navigateToRandomBooks
 import com.vako.abook.presentation.screen.random_books.randomBook
+import com.vako.abook.presentation.screen.splash_login.SplashLoginRoute
+import com.vako.abook.presentation.screen.splash_login.splashLogin
+import com.vako.abook.presentation.screen.user_profile.userProfile
 
 @Composable
 fun NavigationRoot() {
@@ -27,7 +34,21 @@ fun NavigationRoot() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
+    val isNavigationVisible = currentDestination?.hasRoute(SplashLoginRoute::class) != true
+    val adaptiveInfo = currentWindowAdaptiveInfo()
+    val customNavSuiteType =
+        with(adaptiveInfo) {
+            if (!isNavigationVisible){
+                NavigationSuiteType.None
+            } else if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED) {
+                NavigationSuiteType.NavigationDrawer
+            } else {
+                NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
+            }
+        }
+
     NavigationSuiteScaffold(
+        layoutType = customNavSuiteType,
         navigationSuiteItems = {
             TopLevelDestination.entries.forEach { destination ->
                 item(
@@ -54,7 +75,7 @@ fun NavigationRoot() {
         }
 
     ) {
-        NavHost(navController = navController, startDestination = RandomBooksRoute) {
+        NavHost(navController = navController, startDestination = SplashLoginRoute) {
             randomBook(
                 onNavigateToBook = { bookId ->
                     navController.navigateToBook(bookId)
@@ -64,6 +85,12 @@ fun NavigationRoot() {
             favoriteBooks(
                 onNavigateToBook = { bookId ->
                     navController.navigateToBook(bookId)
+                }
+            )
+            userProfile()
+            splashLogin(
+                onNavigateHome = {
+                    navController.navigateToRandomBooks()
                 }
             )
         }

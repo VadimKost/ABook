@@ -2,4 +2,5 @@
     <string name="app_name">ABook</string>
     <string name="random_books">Random Books</string>
     <string name="favorite_books">Favorite Books</string>
+    <string name="profile">Profile</string>
 </resources>

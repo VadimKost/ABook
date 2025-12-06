@@ -5,7 +5,10 @@ import com.vako.domain.user.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
-    suspend fun getCurrentUser(): User
+    suspend fun signInAnonymously()
+    suspend fun signInViaGoogle(token: String)
+    suspend fun linkWithCredential(token: String)
+    suspend fun getCurrentUser(): User?
     fun observeCurrentUser(): Flow<User?>
     suspend fun savePlaybackProgress(
         bookId: String,

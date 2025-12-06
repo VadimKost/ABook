@@ -10,6 +10,6 @@ class GetPreferredVoiceoverIdForBookUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(bookId: String): String? {
         val user = userRepository.getCurrentUser()
-        return user.preferredVoiceovers[bookId]
+        return user?.preferredVoiceovers[bookId]
     }
 }
