@@ -10,12 +10,27 @@ import com.vako.data.db.entity.book.detailed.VoiceoverWithDetails
 import com.vako.data.parser.model.ParsedVoiceoverBookMetadata
 import com.vako.domain.book.model.Book
 import com.vako.domain.book.model.Series
-import java.util.UUID
+import com.vako.data.mapper.util.toStableId
 
-fun ParsedVoiceoverBookMetadata.toNewEntity(): BookWithDetails = toEntity(
-    bookId = UUID.randomUUID().toString(),
-    voiceoverId = UUID.randomUUID().toString()
-)
+fun ParsedVoiceoverBookMetadata.toEntity(): BookWithDetails {
+    // Use deterministic ids based on source and title/internal ids
+    val bookId = stableBookId(
+        sourceName = this.source.name,
+        bookTitle = this.title
+    )
+
+    val voiceoverId = stableVoiceoverId(
+        sourceName = this.source.name,
+        externalVoiceoverId = this.relatedVoiceoverId,
+        bookId = bookId
+    )
+
+    return toEntity(bookId = bookId, voiceoverId = voiceoverId)
+}
+
+fun stableBookId(sourceName: String, bookTitle: String): String {
+    return ("$sourceName|$bookTitle").toStableId()
+}
 
 fun ParsedVoiceoverBookMetadata.toEntity(
     bookId: String,
@@ -32,7 +47,7 @@ fun ParsedVoiceoverBookMetadata.toEntity(
         ),
         authors = this.authors.map { authorName ->
             AuthorEntity(
-                id = UUID.randomUUID().toString(),
+                id = authorName.toStableId(),
                 fullName = authorName
             )
         },

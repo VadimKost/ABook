@@ -6,8 +6,8 @@ import com.vako.data.db.entity.book.ReaderEntity
 import com.vako.data.db.entity.book.VoiceoverEntity
 import com.vako.data.db.entity.book.detailed.VoiceoverWithDetails
 import com.vako.data.parser.model.ParsedVoiceover
+import com.vako.data.mapper.util.toStableId
 import com.vako.domain.book.model.Voiceover
-import java.util.UUID
 
 fun ParsedVoiceover.toVoiceoverWithDetails(
     inAppId: String,
@@ -20,7 +20,7 @@ fun ParsedVoiceover.toVoiceoverWithDetails(
         ),
         readers = this.readers.map {
             ReaderEntity(
-                id = UUID.randomUUID().toString(),
+                id = stableReaderId(it),
                 fullName = it
             )
         },
@@ -38,6 +38,15 @@ fun ParsedVoiceover.toVoiceoverWithDetails(
             externalId = this.internalId
         )
     )
+}
+
+
+fun stableVoiceoverId(sourceName: String, externalVoiceoverId: String, bookId: String): String {
+    return ("$bookId|$sourceName|$externalVoiceoverId").toStableId()
+}
+
+fun stableReaderId(readerFullName: String): String {
+    return readerFullName.toStableId()
 }
 
 fun VoiceoverWithDetails.toDomain(): Voiceover {

@@ -5,7 +5,6 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.UUID
 
 // TODO: Replace inAppId: String to UUID(room support)
 @Entity(
@@ -16,7 +15,7 @@ data class BookEntity(
 
     @PrimaryKey
     @ColumnInfo(name = "inAppId")
-    val inAppId: String = UUID.randomUUID().toString(),
+    val inAppId: String,
 
     @ColumnInfo(name = "title")
     val title: String,
